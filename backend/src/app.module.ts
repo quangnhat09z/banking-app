@@ -1,7 +1,10 @@
-// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { AccountsModule } from './accounts/accounts.module';
+import { TransactionsModule } from './transactions/transactions.module';
 import { User } from './users/entities/user.entity';
 import { Account } from './accounts/entities/account.entity';
 import { Transaction } from './transactions/entities/transaction.entity';
@@ -15,9 +18,13 @@ import { Transaction } from './transactions/entities/transaction.entity';
         type: 'postgres',
         url: config.get('DATABASE_URL'),
         entities: [User, Account, Transaction],
-        synchronize: true, // Chỉ dùng khi dev
+        synchronize: true,
       }),
     }),
+    AuthModule,
+    UsersModule,
+    AccountsModule,
+    TransactionsModule,
   ],
 })
 export class AppModule {}
