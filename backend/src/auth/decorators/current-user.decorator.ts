@@ -10,7 +10,6 @@ export interface JwtPayload {
 export const CurrentUser = createParamDecorator(
     (data: unknown, ctx: ExecutionContext): JwtPayload => {
         const request = ctx.switchToHttp().getRequest();
-        console.log('CurrentUser decorator called, request.user:', request.user);
         return request.user; // được gán bởi JwtStrategy.validate()
     },
 );
