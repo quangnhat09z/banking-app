@@ -1,6 +1,11 @@
 // src/transactions/transactions.service.ts
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
+import { DataSource, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Account, AccountStatus } from '../accounts/entities/account.entity';
 import {
     Transaction,
@@ -8,10 +13,94 @@ import {
     TransactionType,
 } from './entities/transaction.entity';
 import { CreateTransferDto } from './dto/create-transfer.dto';
+import {
+    GetTransactionsDto,
+    TransactionDirection,
+} from './dto/get-transactions.dto';
+import { Brackets } from 'typeorm';
 
 @Injectable()
 export class TransactionsService {
-    constructor(private readonly dataSource: DataSource) { }
+    constructor(
+        private readonly dataSource: DataSource,
+        @InjectRepository(Transaction)
+        private readonly txRepo: Repository<Transaction>,
+        @InjectRepository(Account)
+        private readonly accountRepo: Repository<Account>,
+    ) { }
+
+    async getHistory(userId: string, dto: GetTransactionsDto) {
+        const { page = 1, limit = 10, direction, type } = dto;
+
+        // 1. Lấy account của user hiện tại
+        const account = await this.accountRepo.findOne({ where: { user_id: userId } });
+        if (!account) {
+            throw new NotFoundException('Account not found');
+        }
+
+        // 2. build query
+        const queryBuilder = this.txRepo
+            .createQueryBuilder('tx')
+            .leftJoin('tx.fromAccount', 'fromAccount')
+            .leftJoin('tx.toAccount', 'toAccount')
+            .addSelect(['fromAccount.account_number', 'toAccount.account_number'])
+            .orderBy('tx.created_at', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit);
+
+        // 3. filter theo direction
+        switch (direction) {
+            case TransactionDirection.SENT:
+                queryBuilder.andWhere('tx.from_account_id = :accountId', { accountId: account.id });
+                break;
+            case TransactionDirection.RECEIVED:
+                queryBuilder.andWhere('tx.to_account_id = :accountId', { accountId: account.id });
+                break;
+            default: // ALL
+                queryBuilder.andWhere(
+                    new Brackets((qb) => {
+                        qb.where('tx.from_account_id = :accountId OR tx.to_account_id = :accountId', {
+                            accountId: account.id,
+                        });
+                    }),
+                );
+        }
+
+        // 4. filter theo type
+        if (type) {
+            queryBuilder.andWhere('tx.type = :type', { type });
+        }
+
+        // 5. Lây data, tổng số trang, tổng số bản ghi
+        const [transactions, total] = await queryBuilder.getManyAndCount();
+        const totalPages = Math.ceil(total / limit);
+
+        // 6. format response
+        const data = transactions.map((tx) => {
+            const isSent = tx.from_account_id === account.id;
+            return {
+                id: tx.id,
+                amount: tx.amount,
+                direction: isSent ? TransactionDirection.SENT : TransactionDirection.RECEIVED,
+                counterparty_account: isSent ? tx.toAccount.account_number : tx.fromAccount.account_number,
+                type: tx.type,
+                status: tx.status,
+                description: tx.description,
+                created_at: tx.created_at,
+            }
+        });
+        return {
+            data,
+            pagination: {
+                total: total,
+                page,
+                limit,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1,
+            }
+        };
+    }
 
     async transfer(userId: string, dto: CreateTransferDto) {
 
