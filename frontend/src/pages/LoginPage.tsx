@@ -53,7 +53,7 @@ export default function LoginPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // Ngăn trình duyệt reload trang
+    e.preventDefault();
     if (!validate() || loading) return;
 
     setLoading(true);
@@ -64,12 +64,24 @@ export default function LoginPage() {
       });
 
       setAuth(res.user, res.access_token);
-      navigate('/dashboard', { replace: true }); // Dùng replace để tránh việc bấm nút Back quay lại trang Login
+      navigate('/dashboard', { replace: true });
     } catch (err: any) {
-      const message = err.response?.data?.message;
-      setErrors({
-        general: message ?? 'An error occurred, please try again',
-      });
+      const status = err.response?.status;
+
+      // 401 → sai email hoặc password (hoặc tài khoản bị khóa)
+      if (status === 401) {
+        const message = err.response?.data?.message;
+
+        // Tài khoản bị khóa thì hiển thị riêng
+        if (message === 'Tài khoản đã bị khóa') {
+          setErrors({ general: 'Your account has been locked. Please contact support.' });
+        } else {
+          setErrors({ general: 'Invalid email or password.' });
+        }
+      } else {
+        // Lỗi server hoặc network
+        setErrors({ general: 'An error occurred, please try again.' });
+      }
     } finally {
       setLoading(false);
     }
@@ -125,7 +137,7 @@ export default function LoginPage() {
 
           <Button
             type="submit" fullWidth loading={loading} disabled={loading}
-            // className="mt-2"
+          // className="mt-2"
           >
             Sign In
           </Button>
