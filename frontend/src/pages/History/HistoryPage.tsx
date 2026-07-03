@@ -34,7 +34,7 @@ export default function HistoryPage() {
   const [error, setError] = useState('');
   const [direction, setDirection] = useState<TransactionDirection>('all');
   const [page, setPage] = useState(1);
-  const LIMIT = 2;
+  const LIMIT = 10;
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -60,14 +60,14 @@ export default function HistoryPage() {
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto py-4">
-        {/* Header với tiêu đề tinh tế */}
+        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Transaction History</h1>
             {/* <p className="text-sm text-gray-500 mt-1">Monitor and download your recent banking activities</p> */}
           </div>
 
-          {/* Tabs bộ lọc được bo góc mềm mại */}
+          {/* Tabs bộ lọc */}
           <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit shrink-0 border border-gray-200/50">
             {DIRECTION_TABS.map((tab) => (
               <button
@@ -118,7 +118,7 @@ export default function HistoryPage() {
                       key={tx.id} 
                       className="flex items-center justify-between gap-4 px-6 py-4 hover:bg-gray-50/70 transition-colors"
                     >
-                      {/* Cột trái: Icon hành động + Chi tiết text */}
+                      {/* Cột trái: Icon hành động */}
                       <div className="flex items-center gap-4 min-w-0">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border
                           ${tx.direction === 'received' 
