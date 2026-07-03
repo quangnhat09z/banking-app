@@ -8,6 +8,8 @@ import { TransactionsModule } from './transactions/transactions.module';
 import { User } from './users/entities/user.entity';
 import { Account } from './accounts/entities/account.entity';
 import { Transaction } from './transactions/entities/transaction.entity';
+import { AdminModule } from './admin/admin.module';
+
 
 @Module({
   imports: [
@@ -25,6 +27,7 @@ import { Transaction } from './transactions/entities/transaction.entity';
     UsersModule,
     AccountsModule,
     TransactionsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}
