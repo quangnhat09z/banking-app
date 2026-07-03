@@ -3,7 +3,7 @@ export interface Transaction {
   id: string;
   amount: string;
   direction: 'sent' | 'received';
-  counterpart_account: string;
+  counterparty_account: string;
   type: 'transfer' | 'deposit' | 'withdrawal';
   status: 'pending' | 'success' | 'failed';
   description: string;
@@ -14,9 +14,9 @@ export interface TransactionPagination {
   total: number;
   page: number;
   limit: number;
-  total_pages: number;
-  has_next: boolean;
-  has_prev: boolean;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 export interface TransactionHistoryResponse {

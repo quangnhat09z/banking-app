@@ -5,7 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard/DashboardPage';
-// import History from './pages/History/HistoryPage';
+import History from './pages/History/HistoryPage';
 
 // Placeholder cho các trang chưa làm
 const Transfer = () => <div className="p-8 text-gray-700">Transfer (coming soon)</div>;
@@ -29,7 +29,7 @@ export default function App() {
         Protected routes
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/transfer" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
-        {/* <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} /> */}
+        <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
