@@ -50,7 +50,7 @@ export default function TransferPage() {
       setErrors((prev) => ({ ...prev, [field]: undefined, general: undefined }));
     };
 
-  // ── VALIDATE ──────────────────────────────────────────────
+  //  VALIDATE 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -75,12 +75,12 @@ export default function TransferPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ── BƯỚC 1: sang màn xác nhận ────────────────────────────
+  // 1. sang màn xác nhận 
   const handleReview = () => {
     if (validate()) setPageState('confirm');
   };
 
-  // ── BƯỚC 2: thực hiện chuyển khoản ───────────────────────
+  // 2. thực hiện chuyển khoản 
   const handleConfirm = async () => {
     setLoading(true);
     setErrors({});
@@ -96,27 +96,30 @@ export default function TransferPage() {
       setPageState('success');
     } catch (err: any) {
       const message = err.response?.data?.message;
+      console.log('Transfer error:', message);
 
-      // Map lỗi từ backend sang tiếng Việt thân thiện
+      // Map lỗi từ backend => Thông báo
       const errorMap: Record<string, string> = {
-        'Số dư không đủ để thực hiện giao dịch': 'Insufficient account balance.',
-        'Tài khoản đích không tồn tại': 'Recipient account does not exist.',
-        'Tài khoản đích đang bị khóa, không thể nhận tiền': 'Recipient account is locked.',
-        'Không thể chuyển khoản vào chính tài khoản của bạn': 'Cannot transfer to your own account.',
-        'Tài khoản của bạn đang bị khóa': 'Your account is locked, cannot perform transactions.',
-      };
+        'Insufficient balance for the transfer': 'Your account balance is insufficient for this transfer',
+        'Target account not found': 'Target account not found, please check the account number again',
+        'Target account is not active': 'Target account is not active, please check the account number again',
+        'Sender account not found': 'Your account was not found, please contact support',
+        'Sender account is not active': 'Your account is not active, please contact support',
+        'Cannot transfer to the same account': 'You cannot transfer to your own account',
+        'Amount is invalid': 'The transfer amount is invalid',
+        'Amount exceeds the maximum limit of 999999999999.99': 'The transfer amount exceeds the allowed limit',
+    };
 
       setErrors({
         general: errorMap[message] ?? 'An error occurred while processing the transaction. Please try again later.',
       });
-      // Quay về form để user sửa
       setPageState('form');
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Reset toàn bộ để chuyển khoản mới ────────────────────
+  // Reset toàn bộ để chuyển khoản mới 
   const handleReset = () => {
     setForm({ to_account_number: '', amount: '', description: '' });
     setErrors({});
@@ -131,7 +134,7 @@ export default function TransferPage() {
 
       <div className="max-w-lg">
 
-        {/* ── FORM ── */}
+        {/* FORM  */}
         {pageState === 'form' && (
           <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col gap-5">
 
@@ -181,7 +184,7 @@ export default function TransferPage() {
           </div>
         )}
 
-        {/* ── XÁC NHẬN ── */}
+        {/* XÁC NHẬN */}
         {pageState === 'confirm' && (
           <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col gap-5">
             <div className="text-center">
@@ -236,7 +239,7 @@ export default function TransferPage() {
           </div>
         )}
 
-        {/* ── THÀNH CÔNG ── */}
+        {/* THÀNH CÔNG */}
         {pageState === 'success' && result && (
           <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col items-center gap-5 text-center">
 
