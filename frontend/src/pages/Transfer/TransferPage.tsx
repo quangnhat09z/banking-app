@@ -3,10 +3,16 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import AppLayout from '../../components/AppLayout';
-import InputField from '../../components/InputField';
-import Button from '../../components/Button';
 import transactionService from '../../services/transaction.service';
 import type { TransferResponse } from '../../types/transaction.type';
+
+// screen components
+import TransferForm from '../../components/transfer/TransferForm';
+import TransferConfirm  from '../../components/transfer/TransferConfirm';
+import TransferSuccess from '../../components/transfer/TransferSuccess';
+
+// constants
+import { TRANSFER_ERROR_MAP, DEFAULT_TRANSFER_ERROR } from '../../constants/errorTransferMessage';
 
 interface FormState {
   to_account_number: string;
@@ -39,9 +45,6 @@ export default function TransferPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TransferResponse | null>(null);
-
-  // idempotency_key sinh 1 lần duy nhất cho mỗi lần submit
-  // reset lại khi user quay về form để tạo giao dịch mới
   const [idempotencyKey, setIdempotencyKey] = useState(() => uuidv4());
 
   const handleChange = (field: keyof FormState) =>
@@ -50,7 +53,6 @@ export default function TransferPage() {
       setErrors((prev) => ({ ...prev, [field]: undefined, general: undefined }));
     };
 
-  //  VALIDATE 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
 
@@ -75,12 +77,10 @@ export default function TransferPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // 1. sang màn xác nhận 
   const handleReview = () => {
     if (validate()) setPageState('confirm');
   };
 
-  // 2. thực hiện chuyển khoản 
   const handleConfirm = async () => {
     setLoading(true);
     setErrors({});
@@ -96,22 +96,8 @@ export default function TransferPage() {
       setPageState('success');
     } catch (err: any) {
       const message = err.response?.data?.message;
-      console.log('Transfer error:', message);
-
-      // Map lỗi từ backend => Thông báo
-      const errorMap: Record<string, string> = {
-        'Insufficient balance for the transfer': 'Your account balance is insufficient for this transfer',
-        'Target account not found': 'Target account not found, please check the account number again',
-        'Target account is not active': 'Target account is not active, please check the account number again',
-        'Sender account not found': 'Your account was not found, please contact support',
-        'Sender account is not active': 'Your account is not active, please contact support',
-        'Cannot transfer to the same account': 'You cannot transfer to your own account',
-        'Amount is invalid': 'The transfer amount is invalid',
-        'Amount exceeds the maximum limit of 999999999999.99': 'The transfer amount exceeds the allowed limit',
-    };
-
       setErrors({
-        general: errorMap[message] ?? 'An error occurred while processing the transaction. Please try again later.',
+        general: TRANSFER_ERROR_MAP[message] ?? DEFAULT_TRANSFER_ERROR,
       });
       setPageState('form');
     } finally {
@@ -119,171 +105,61 @@ export default function TransferPage() {
     }
   };
 
-  // Reset toàn bộ để chuyển khoản mới 
   const handleReset = () => {
     setForm({ to_account_number: '', amount: '', description: '' });
     setErrors({});
     setResult(null);
-    setIdempotencyKey(uuidv4()); // sinh key mới cho giao dịch tiếp theo
+    setIdempotencyKey(uuidv4());
     setPageState('form');
   };
 
   return (
     <AppLayout>
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Transfer Money</h1>
-
-      <div className="max-w-lg">
-
-        {/* FORM  */}
-        {pageState === 'form' && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col gap-5">
-
-            {errors.general && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 flex items-start gap-2">
-                <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
-                </svg>
-                {errors.general}
-              </div>
-            )}
-
-            <InputField
-              label="Type the recipient's account number"
-              placeholder="Enter the recipient's account number (9–12 digits)"
-              value={form.to_account_number}
-              onChange={handleChange('to_account_number')}
-              error={errors.to_account_number}
-            />
-
-            <InputField
-              label="Transfer Amount (VND)"
-              placeholder="e.g., 500000"
-              value={form.amount}
-              onChange={handleChange('amount')}
-              error={errors.amount}
-            />
-
-            {/* Preview số tiền đã format */}
-            {form.amount && !isNaN(parseFloat(form.amount)) && parseFloat(form.amount) > 0 && (
-              <p className="text-sm text-blue-600 font-medium -mt-3">
-                ≈ {formatVND(form.amount)}
-              </p>
-            )}
-
-            <InputField
-              label="Transfer Description (Optional)"
-              placeholder="e.g., Payment for lunch"
-              value={form.description}
-              onChange={handleChange('description')}
-            />
-
-            <Button fullWidth onClick={handleReview}>
-              Continue to Confirmation
-            </Button>
+      <div className="max-w-xl mx-auto py-4">
+        
+        {/* Tiêu đề, thanh tiến trình */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Transfer Money</h1>
+          <p className="text-sm text-gray-500 mt-1">Move funds securely across internal accounts</p>
+          
+          {/* Thanh quy trình */}
+          <div className="flex items-center gap-2 mt-6">
+            <span className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${pageState === 'form' ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <span className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${pageState === 'confirm' ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <span className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${pageState === 'success' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
           </div>
+        </div>
+
+        {/* Screen 1: Form */}
+       {pageState === 'form' && (
+          <TransferForm 
+            form={form} 
+            errors={errors} 
+            onChange={handleChange} 
+            onReview={handleReview} 
+            formatVND={formatVND} 
+          />
         )}
 
-        {/* XÁC NHẬN */}
+        {/* Screen 2: Confirmation */}
         {pageState === 'confirm' && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col gap-5">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-50 rounded-full mb-3">
-                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-              </div>
-              <h2 className="text-base font-semibold text-gray-900">Confirm Transaction</h2>
-              <p className="text-sm text-gray-400 mt-1">Please review the details before confirming</p>
-            </div>
-
-            {/* Chi tiết giao dịch */}
-            <div className="bg-gray-50 rounded-xl divide-y divide-gray-100">
-              {[
-                { label: 'Recipient Account', value: <span className="font-mono">{form.to_account_number}</span> },
-                {
-                  label: 'Amount',
-                  value: (
-                    <span className="text-red-500 font-bold text-base">
-                      -{formatVND(form.amount)}
-                    </span>
-                  ),
-                },
-                { label: 'Description', value: form.description.trim() || <span className="text-gray-400 italic">None</span> },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-gray-500">{label}</span>
-                  <span className="text-sm font-medium text-gray-900">{value}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                fullWidth
-                disabled={loading}
-                onClick={() => setPageState('form')}
-              >
-                Back
-              </Button>
-              <Button
-                fullWidth
-                loading={loading}
-                onClick={handleConfirm}
-              >
-                Confirm
-              </Button>
-            </div>
-          </div>
+          <TransferConfirm
+            form={form}
+            loading={loading}
+            onBack={() => setPageState('form')}
+            onConfirm={handleConfirm}
+            formatVND={formatVND}
+          />
         )}
 
-        {/* THÀNH CÔNG */}
+        {/* Screen 3: Successful Transfer (Receipt) */}
         {pageState === 'success' && result && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col items-center gap-5 text-center">
-
-            {/* Checkmark */}
-            <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-
-            <div>
-              <h2 className="text-base font-semibold text-gray-900">Transfer Successful!</h2>
-              <p className="text-sm text-gray-400 mt-1">
-                {new Date(result.transaction.created_at).toLocaleString('vi-VN')}
-              </p>
-            </div>
-
-            {/* Chi tiết kết quả */}
-            <div className="w-full bg-gray-50 rounded-xl divide-y divide-gray-100">
-              {[
-                { label: 'Amount', value: <span className="text-red-500 font-semibold">-{formatVND(result.transaction.amount)}</span> },
-                { label: 'Remaining Balance', value: <span className="font-semibold text-gray-900">{formatVND(result.new_balance)}</span> },
-                { label: 'Transaction ID', value: <span className="font-mono text-xs text-gray-500">{result.transaction.id}</span> },
-                {
-                  label: 'Description',
-                  value: result.transaction.description || <span className="text-gray-400 italic">None</span>,
-                },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-gray-500">{label}</span>
-                  <span className="text-sm text-right">{value}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3 w-full">
-              <Button variant="outline" fullWidth onClick={() => navigate('/history')}>
-                View History
-              </Button>
-              <Button fullWidth onClick={handleReset}>
-                Make New Transfer
-              </Button>
-            </div>
-          </div>
+          <TransferSuccess 
+            result={result} 
+            onViewHistory={() => navigate('/history')} 
+            onNewTransfer={handleReset} 
+            formatVND={formatVND} 
+          />
         )}
 
       </div>
