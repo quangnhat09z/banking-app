@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AppLayout from '../../components/AppLayout';
-import Spinner from '../../components/Spinner';
-import ErrorMessage from '../../components/ErrorMessage';
+import Spinner from '../../components/common/Spinner';
+import ErrorMessage from '../../components/common/ErrorMessage';
 import accountService from '../../services/account.service';
 import type { Account } from '../../types/account.types';
 

@@ -1,11 +1,11 @@
 // src/pages/History/HistoryPage.tsx
 import { useEffect, useState, useCallback } from 'react';
 import AppLayout from '../../components/AppLayout';
-import Spinner from '../../components/Spinner';
-import ErrorMessage from '../../components/ErrorMessage';
+import Spinner from '../../components/common/Spinner';
+import ErrorMessage from '../../components/common/ErrorMessage';
 import transactionService from '../../services/transaction.service';
 import type { Transaction, TransactionPagination, TransactionDirection } from '../../types/transaction.type';
-import Pagination from '../../components/Pagination';
+import Pagination from '../../components/common/Pagination';
 
 function formatVND(amount: string) {
   return new Intl.NumberFormat('vi-VN', {

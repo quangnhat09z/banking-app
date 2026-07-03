@@ -1,5 +1,5 @@
 // src/components/Pagination.tsx
-import type { TransactionPagination } from '../types/transaction.type';
+import type { TransactionPagination } from '../../types/transaction.type';
 
 interface PaginationProps {
   pagination: TransactionPagination | null;

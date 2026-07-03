@@ -1,5 +1,5 @@
 
-import Button from '../Button';
+import Button from '../common/Button';
 
 interface FormState {
   to_account_number: string;
