@@ -6,9 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Dashboard from './pages/Dashboard/DashboardPage';
 import History from './pages/History/HistoryPage';
-
-// Placeholder cho các trang chưa làm
-const Transfer = () => <div className="p-8 text-gray-700">Transfer (coming soon)</div>;
+import Transfer from './pages/Transfer/TransferPage';
 
 export default function App() {
   const { isAuthenticated } = useAuthStore();
@@ -30,6 +28,7 @@ export default function App() {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/transfer" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
         <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+        <Route path="/transfer" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
