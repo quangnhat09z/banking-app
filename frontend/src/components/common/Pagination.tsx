@@ -1,8 +1,9 @@
 // src/components/Pagination.tsx
-import type { TransactionPagination } from '../../types/transaction.type';
+import type { TransactionPagination } from '../../types/transaction.types';
+import type { AdminUserPagination } from '../../types/admin.types';
 
 interface PaginationProps {
-  pagination: TransactionPagination | null;
+  pagination: AdminUserPagination | TransactionPagination | null;
   onPageChange: (newPage: number) => void;
 }
 

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import AppLayout from '../../components/AppLayout';
 import transactionService from '../../services/transaction.service';
-import type { TransferResponse } from '../../types/transaction.type';
+import type { TransferResponse } from '../../types/transaction.types';
 
 // screen components
 import TransferForm from '../../components/transfer/TransferForm';

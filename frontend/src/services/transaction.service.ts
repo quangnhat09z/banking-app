@@ -1,6 +1,6 @@
 // src/services/transaction.service.ts
 import axiosInstance from '../api/axios';
-import type { TransactionHistoryResponse, TransactionDirection, TransferPayload, TransferResponse } from '../types/transaction.type';
+import type { TransactionHistoryResponse, TransactionDirection, TransferPayload, TransferResponse } from '../types/transaction.types';
 
 export interface GetTransactionsParams {
   page?: number;

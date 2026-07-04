@@ -1,12 +1,20 @@
 // src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth.store';
-import ProtectedRoute from './components/ProtectedRoute';
+
+// Public routes
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+
+// Protected routes
+import ProtectedRoute from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard/DashboardPage';
 import History from './pages/History/HistoryPage';
 import Transfer from './pages/Transfer/TransferPage';
+
+// Admin routes
+import AdminRoute from './components/AdminRoute';
+import AdminUsersPage from './pages/Admin/AdminUsersPage';
 
 export default function App() {
   const { isAuthenticated } = useAuthStore();
@@ -14,7 +22,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes — đã login thì redirect thẳng vào dashboard */}
+        {/* Public routes - đã login thì redirect thẳng vào dashboard */}
         <Route
           path="/login"
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />}
@@ -24,12 +32,13 @@ export default function App() {
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <RegisterPage />}
         />
 
-        Protected routes
+        {/* Protected routes */}
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/transfer" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
         <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
         <Route path="/transfer" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
-
+        <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+       
         {/* Fallback */}
         <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />
       </Routes>

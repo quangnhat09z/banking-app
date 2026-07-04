@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
 import authService from '../services/auth.service';
 
-const navItems = [
+const baseNavItems = [
   {
     to: '/dashboard',
     label: 'Account',
@@ -46,6 +46,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     navigate('/login', { replace: true });
   };
 
+  const currentNavItems = [
+    ...baseNavItems,
+    ...(user?.role === 'admin' 
+      ? [{
+          to: '/admin/users',
+          label: 'Manage Users',
+          icon: (
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a4 4 0 00-5-3.87M9 20H4v-2a4 4 0 015-3.87m6-4a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          ),
+        }]
+      : []
+    )
+  ]
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
@@ -65,7 +81,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
-          {navItems.map((item) => (
+          {currentNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

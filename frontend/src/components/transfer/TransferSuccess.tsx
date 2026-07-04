@@ -1,6 +1,6 @@
 
 import Button from '../common/Button';
-import type { TransferResponse } from '../../types/transaction.type';
+import type { TransferResponse } from '../../types/transaction.types';
 
 interface TransferSuccessProps {
   result: TransferResponse;
