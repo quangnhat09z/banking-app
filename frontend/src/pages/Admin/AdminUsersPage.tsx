@@ -28,7 +28,7 @@ const STATUS_TABS: { label: string; value: UserStatusFilter }[] = [
   { label: 'Locked', value: 'locked' },
 ];
 
-const LIMIT = 2;
+const LIMIT = 10;
 
 interface ModalState {
   open: boolean;

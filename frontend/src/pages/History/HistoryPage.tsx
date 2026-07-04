@@ -4,7 +4,7 @@ import AppLayout from '../../components/AppLayout';
 import Spinner from '../../components/common/Spinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
 import transactionService from '../../services/transaction.service';
-import type { Transaction, TransactionPagination, TransactionDirection } from '../../types/transaction.type';
+import type { Transaction, TransactionPagination, TransactionDirection } from '../../types/transaction.types';
 import Pagination from '../../components/common/Pagination';
 
 function formatVND(amount: string) {

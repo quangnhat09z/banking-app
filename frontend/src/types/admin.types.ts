@@ -1,18 +1,13 @@
 
+import type { PaginationMeta } from './pagination.types';
+
 export interface AdminAccount {
     account_number: string;
     balance: string;
     status: 'active' | 'locked';
 }
 
-export interface AdminUserPagination {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPrevPage: boolean;
-}
+export type AdminUserPagination = PaginationMeta;
 
 export interface AdminUser {
     id: string;

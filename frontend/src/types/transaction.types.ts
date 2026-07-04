@@ -1,4 +1,6 @@
 // src/types/transaction.types.ts
+import type { PaginationMeta } from './pagination.types';
+
 export interface Transaction {
   id: string;
   amount: string;
@@ -10,14 +12,7 @@ export interface Transaction {
   created_at: string;
 }
 
-export interface TransactionPagination {
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
-}
+export type TransactionPagination = PaginationMeta;
 
 export interface TransactionHistoryResponse {
   data: Transaction[];
