@@ -6,10 +6,13 @@ import AppLayout from '../../components/AppLayout';
 import transactionService from '../../services/transaction.service';
 import type { TransferResponse } from '../../types/transaction.types';
 
+// components
+import TransferHeader from '../../components/transfer/TransferComponents/TransferHeader';
+
 // screen components
-import TransferForm from '../../components/transfer/TransferForm';
-import TransferConfirm  from '../../components/transfer/TransferConfirm';
-import TransferSuccess from '../../components/transfer/TransferSuccess';
+import TransferForm from '../../components/transfer/TransferScreen/TransferForm';
+import TransferConfirm  from '../../components/transfer/TransferScreen/TransferConfirm';
+import TransferSuccess from '../../components/transfer/TransferScreen/TransferSuccess';
 
 // constants
 import { TRANSFER_ERROR_MAP, DEFAULT_TRANSFER_ERROR } from '../../constants/errorTransferMessage';
@@ -118,17 +121,7 @@ export default function TransferPage() {
       <div className="max-w-xl mx-auto py-4">
         
         {/* Tiêu đề, thanh tiến trình */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Transfer Money</h1>
-          <p className="text-sm text-gray-500 mt-1">Move funds securely across internal accounts</p>
-          
-          {/* Thanh quy trình */}
-          <div className="flex items-center gap-2 mt-6">
-            <span className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${pageState === 'form' ? 'bg-blue-600' : 'bg-gray-200'}`} />
-            <span className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${pageState === 'confirm' ? 'bg-blue-600' : 'bg-gray-200'}`} />
-            <span className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${pageState === 'success' ? 'bg-emerald-500' : 'bg-gray-200'}`} />
-          </div>
-        </div>
+        <TransferHeader pageState={pageState} />
 
         {/* Screen 1: Form */}
        {pageState === 'form' && (
