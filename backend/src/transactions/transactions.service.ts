@@ -128,71 +128,86 @@ export class TransactionsService {
             const accountRepo = manager.getRepository(Account);
             const txRepo = manager.getRepository(Transaction);
 
-            // 3a. check tài khoản nguồn của user hiện tại
-            const fromAccount = await accountRepo.findOne({
+            // 1. Lấy account_number của fromAccount KHÔNG LOCK 
+            const fromAccountMeta = await accountRepo.findOne({
                 where: { user_id: userId },
-                lock: { mode: 'pessimistic_write' },
+                select: {
+                    id: true,
+                    account_number: true,
+                },
             });
 
-            if (!fromAccount) {
+            if (!fromAccountMeta) {
                 throw new NotFoundException('Sender account not found');
             }
 
-            if (fromAccount.status !== AccountStatus.ACTIVE) {
-                throw new BadRequestException('Sender account is not active');
-            }
-
-            // 3b. chống tự chuyển tiền
-            if (fromAccount.account_number === dto.to_account_number) {
+            // 2. Chống tự chuyển — check trước khi gọi lệnh lock 
+            if (fromAccountMeta.account_number === dto.to_account_number) {
                 throw new BadRequestException('Cannot transfer to the same account');
             }
 
-            // 3c. Lấy account đích — CŨNG PHẢI LOCK
-            //     Quan trọng: luôn lock theo thứ tự cố định (vd: theo account_number) để tránh deadlock
-            //     khi 2 giao dịch ngược chiều xảy ra cùng lúc (A->B và B->A)
-            const accountsInOrder = [fromAccount.account_number, dto.to_account_number].sort();
-            const isFromFirst = accountsInOrder[0] === fromAccount.account_number;
+            // 3: Xác định thứ tự lock dựa trên sort để CHỐNG DEADLOCK
+            const shouldLockFromFirst =
+                fromAccountMeta.account_number < dto.to_account_number;
 
+            let fromAccount: Account | null = null;
             let toAccount: Account | null = null;
-            if (isFromFirst) {
-                // Nếu fromAccount nhỏ => đã được lock trước, nên lock toAccount sau (số lớn)
+
+            if (shouldLockFromFirst) {
+                // từ tài khoản số bé (from) -> số lớn (to)
+                fromAccount = await accountRepo.findOne({
+                    where: { user_id: userId },
+                    lock: { mode: 'pessimistic_write' },
+                });
                 toAccount = await accountRepo.findOne({
                     where: { account_number: dto.to_account_number },
                     lock: { mode: 'pessimistic_write' },
                 });
             } else {
-                // Nếu fromAccount lớn => lock toAccount trước (số nhỏ), rồi mới lock fromAccount (số lớn)
+                // từ tài khoản số bé (to) -> số lớn (from)
                 toAccount = await accountRepo.findOne({
                     where: { account_number: dto.to_account_number },
                     lock: { mode: 'pessimistic_write' },
                 });
+                fromAccount = await accountRepo.findOne({
+                    where: { user_id: userId },
+                    lock: { mode: 'pessimistic_write' },
+                });
+            }
+
+            // 3.5: Kiểm tra sự tồn tại của tài khoản 
+            if (!fromAccount) {
+                throw new NotFoundException('Sender account not found');
             }
             if (!toAccount) {
                 throw new NotFoundException('Target account not found');
+            }
+
+            // 4. Validate trạng thái sau khi đã lock (Đảm bảo đọc data snapshot mới nhất)
+            if (fromAccount.status !== AccountStatus.ACTIVE) {
+                throw new BadRequestException('Sender account is not active');
             }
 
             if (toAccount.status !== AccountStatus.ACTIVE) {
                 throw new BadRequestException('Target account is not active');
             }
 
-            // 3d. check số dư
+            // 5. Kiểm tra số dư an toàn
             const currentBalance = parseFloat(fromAccount.balance);
             const transferAmount = parseFloat(dto.amount.toFixed(2));
+
             if (currentBalance < transferAmount) {
                 throw new BadRequestException('Insufficient balance for the transfer');
             }
 
-            // 3e. thực hiện cộng/trừ
-            const newFromBalance = (currentBalance - transferAmount).toFixed(2);
-            const newToBalance = (parseFloat(toAccount.balance) + transferAmount).toFixed(2);
-
-            fromAccount.balance = newFromBalance;
-            toAccount.balance = newToBalance;
+            // 6. Thực hiện trừ/cộng số dư
+            fromAccount.balance = (currentBalance - transferAmount).toFixed(2);
+            toAccount.balance = (parseFloat(toAccount.balance) + transferAmount).toFixed(2);
 
             await accountRepo.save(fromAccount);
             await accountRepo.save(toAccount);
 
-            // 3f. tạo transaction record
+            // 7. Lưu transaction record lưu vết lịch sử
             const transaction = txRepo.create({
                 from_account_id: fromAccount.id,
                 to_account_id: toAccount.id,
@@ -202,11 +217,10 @@ export class TransactionsService {
                 description: dto.description ?? '',
                 idempotency_key: dto.idempotency_key,
             });
+
             const savedTransaction = await txRepo.save(transaction);
-            // Nếu bất kỳ bước nào ở trên throw error, toàn bộ sẽ tự động ROLLBACK
-            // vì đang chạy trong this.dataSource.transaction()
             return this.formatTransactionResponse(savedTransaction, fromAccount.balance);
-        })
+        });
     }
 
 
