@@ -1,6 +1,7 @@
+// src/accounts/accounts.service.ts
 import { Injectable } from '@nestjs/common';
-import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { Account } from './entities/account.entity';
 
 @Injectable()
@@ -11,28 +12,29 @@ export class AccountsService {
     ) { }
 
     // Sinh số tài khoản mới, đảm bảo không trùng lặp
-    private async generateAccountNumber(): Promise<string> {
+    private async generateAccountNumber(accountsRepository = this.accountsRepository): Promise<string> {
         let accountNumber: string;
         let isExisting: boolean;
 
         do {
             accountNumber = Math.floor(1000000000 + Math.random() * 9000000000).toString();
-            isExisting = await this.accountsRepository.findOne({ where: { account_number: accountNumber } }) !== null;
+            isExisting = await accountsRepository.findOne({ where: { account_number: accountNumber } }) !== null;
         } while (isExisting);
 
         return accountNumber;
     }
 
     // Tạo tài khoản cho người dùng
-    async createForUser(userId: string): Promise<Account> {
-        const accountNumber = await this.generateAccountNumber();
-        const newAccount = this.accountsRepository.create({
+    async createForUser(userId: string, manager?: EntityManager): Promise<Account> {
+        const accountsRepository = manager?.getRepository(Account) ?? this.accountsRepository;
+        const accountNumber = await this.generateAccountNumber(accountsRepository);
+        const newAccount = accountsRepository.create({
             user_id: userId,
             account_number: accountNumber,
             balance: '0',
             currency: 'VND',
         });
-        return this.accountsRepository.save(newAccount);
+        return accountsRepository.save(newAccount);
     }
 
     async findByUserId(userId: string): Promise<Account[]> {
