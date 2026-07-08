@@ -5,6 +5,7 @@ import authService from '../services/auth.service';
 import { useAuthStore } from '../store/auth.store';
 import InputField from '../components/common/InputField';
 import Button from '../components/common/Button';
+import { AUTH_LOGIN_ERROR_MAP, DEFAULT_AUTH_ERROR } from '../constants/errorAuthMessage';
 
 interface FormState {
   email: string;
@@ -71,16 +72,10 @@ export default function LoginPage() {
       // 401 → sai email hoặc password (hoặc tài khoản bị khóa)
       if (status === 401) {
         const message = err.response?.data?.message;
-
-        // Tài khoản bị khóa thì hiển thị riêng
-        if (message === 'Tài khoản đã bị khóa') {
-          setErrors({ general: 'Your account has been locked. Please contact support.' });
-        } else {
-          setErrors({ general: 'Invalid email or password.' });
-        }
+        setErrors({ general: AUTH_LOGIN_ERROR_MAP[message] || DEFAULT_AUTH_ERROR });
       } else {
         // Lỗi server hoặc network
-        setErrors({ general: 'An error occurred, please try again.' });
+        setErrors({ general: DEFAULT_AUTH_ERROR });
       }
     } finally {
       setLoading(false);

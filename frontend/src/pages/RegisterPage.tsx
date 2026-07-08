@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import authService from '../services/auth.service';
 import InputField from '../components/common/InputField';
 import Button from '../components/common/Button';
+import { AUTH_REGISTER_ERROR_MAP, DEFAULT_AUTH_ERROR } from '../constants/errorAuthMessage';
 
 interface FormState {
   full_name: string;
@@ -46,22 +47,22 @@ export default function RegisterPage() {
     const emailTrimmed = form.email.trim();
 
     if (!form.full_name.trim()) {
-      newErrors.full_name = 'Please enter your full name';
+      newErrors.full_name = AUTH_REGISTER_ERROR_MAP['Null fullname'];
     }
     if (!emailTrimmed) {
-      newErrors.email = 'Please enter your email';
+      newErrors.email = AUTH_REGISTER_ERROR_MAP['Null email'];
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = AUTH_REGISTER_ERROR_MAP['Invalid email'];
     }
     if (!form.password) {
-      newErrors.password = 'Please enter your password';
+      newErrors.password = AUTH_REGISTER_ERROR_MAP['Null password'];
     } else if (form.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = AUTH_REGISTER_ERROR_MAP['Invalid password'];
     }
     if (!form.confirm_password) {
-      newErrors.confirm_password = 'Please confirm your password';
+      newErrors.confirm_password = AUTH_REGISTER_ERROR_MAP['Null confirm password'];
     } else if (form.password !== form.confirm_password) {
-      newErrors.confirm_password = 'Passwords do not match';
+      newErrors.confirm_password = AUTH_REGISTER_ERROR_MAP['Passwords not match'];
     }
 
     setErrors(newErrors);
@@ -74,25 +75,20 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const res = await authService.register({
+      await authService.register({
         full_name: form.full_name.trim(),
         email: form.email.trim(),
         password: form.password,
       });
 
       setSuccessMsg(
-        `Registration successful! Your account number: ${res.account.account_number}. Redirecting to login page...`
+        AUTH_REGISTER_ERROR_MAP['Registration successful']
       );
 
       setTimeout(() => navigate('/login'), 3000);
     } catch (err: any) {
       const message = err.response?.data?.message;
-      // Đồng bộ ngôn ngữ thông báo từ Backend sang Frontend
-      if (message === 'Email đã được sử dụng' || message?.includes('already')) {
-        setErrors({ email: 'This email has already been registered' });
-      } else {
-        setErrors({ general: message ?? 'An error occurred, please try again' });
-      }
+      setErrors({ general: AUTH_REGISTER_ERROR_MAP[message] || DEFAULT_AUTH_ERROR });
     } finally {
       setLoading(false);
     }
