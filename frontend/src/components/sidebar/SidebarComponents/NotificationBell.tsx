@@ -139,7 +139,7 @@ export function NotificationBell() {
                     />
                   </svg>
                 </div>
-                <p className="text-xs text-gray-400 font-medium">Không có thông báo nào ở mục này</p>
+                <p className="text-xs text-gray-400 font-medium">No notifications to display</p>
               </div>
             ) : (
               filteredNotifications.map((notification) => {
