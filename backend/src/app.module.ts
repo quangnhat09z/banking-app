@@ -10,6 +10,10 @@ import { Account } from './accounts/entities/account.entity';
 import { Transaction } from './transactions/entities/transaction.entity';
 import { AdminModule } from './admin/admin.module';
 
+import { NotificationsModule } from './notifications/notifications.module';
+import { Notification } from './notifications/entities/notification.entity';
+
+
 
 @Module({
   imports: [
@@ -19,7 +23,7 @@ import { AdminModule } from './admin/admin.module';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Account, Transaction],
+        entities: [User, Account, Transaction, Notification],
         synchronize: true,
       }),
     }),
@@ -28,6 +32,7 @@ import { AdminModule } from './admin/admin.module';
     AccountsModule,
     TransactionsModule,
     AdminModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

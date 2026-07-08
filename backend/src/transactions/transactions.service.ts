@@ -18,6 +18,9 @@ import {
     TransactionDirection,
 } from './dto/get-transactions.dto';
 import { Brackets } from 'typeorm';
+import { NotificationsService } from 'src/notifications/notifications.service';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+import { NotificationType } from 'src/notifications/entities/notification.entity';
 
 @Injectable()
 export class TransactionsService {
@@ -27,6 +30,8 @@ export class TransactionsService {
         private readonly txRepo: Repository<Transaction>,
         @InjectRepository(Account)
         private readonly accountRepo: Repository<Account>,
+        private readonly notificationsGateway: NotificationsGateway,
+        private readonly notificationsService: NotificationsService,
     ) { }
 
     async getHistory(userId: string, dto: GetTransactionsDto) {
@@ -218,8 +223,41 @@ export class TransactionsService {
                 idempotency_key: dto.idempotency_key,
             });
 
-            const savedTransaction = await txRepo.save(transaction);
-            return this.formatTransactionResponse(savedTransaction, fromAccount.balance);
+            const savedTx = await txRepo.save(transaction);
+
+            const receiverAccount = await manager.getRepository(Account).findOne({
+                where: { id: toAccount.id },
+            });
+
+            if (receiverAccount) {
+                const amountFormatted = new Intl.NumberFormat('vi-VN', {
+                    style: 'currency', currency: 'VND',
+                }).format(parseFloat(savedTx.amount));
+
+                // Thông báo cho người GỬI
+                const senderNotif = await this.notificationsService.create({
+                    user_id: userId,
+                    type: NotificationType.TRANSFER_SENT,
+                    title: 'Chuyển khoản thành công',
+                    body: `Bạn vừa chuyển ${amountFormatted} đến tài khoản ${toAccount.account_number}. 
+                    Số dư còn lại: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(parseFloat(fromAccount.balance))}.`,
+                });
+
+                // Thông báo cho người NHẬN
+                const receiverNotif = await this.notificationsService.create({
+                    user_id: receiverAccount.user_id,
+                    type: NotificationType.TRANSFER_RECEIVED,
+                    title: 'Tiền vừa vào tài khoản',
+                    body: `Tài khoản của bạn vừa nhận ${amountFormatted} từ tài khoản ${fromAccount.account_number}.`,
+                });
+
+                // Gửi real-time (chỉ nhận được nếu đang online)
+                this.notificationsGateway.emitToUser(userId, senderNotif);
+                this.notificationsGateway.emitToUser(receiverAccount.user_id, receiverNotif);
+            }
+
+
+            return this.formatTransactionResponse(savedTx, fromAccount.balance);
         });
     }
 
