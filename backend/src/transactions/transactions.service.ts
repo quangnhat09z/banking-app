@@ -238,17 +238,17 @@ export class TransactionsService {
                 const senderNotif = await this.notificationsService.create({
                     user_id: userId,
                     type: NotificationType.TRANSFER_SENT,
-                    title: 'Chuyển khoản thành công',
-                    body: `Bạn vừa chuyển ${amountFormatted} đến tài khoản ${toAccount.account_number}. 
-                    Số dư còn lại: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(parseFloat(fromAccount.balance))}.`,
+                    title: 'Transfer successful',
+                    body: `You have transferred ${amountFormatted} to account ${toAccount.account_number}. 
+                    Remaining balance: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(parseFloat(fromAccount.balance))}.`,
                 });
 
                 // Thông báo cho người NHẬN
                 const receiverNotif = await this.notificationsService.create({
                     user_id: receiverAccount.user_id,
                     type: NotificationType.TRANSFER_RECEIVED,
-                    title: 'Tiền vừa vào tài khoản',
-                    body: `Tài khoản của bạn vừa nhận ${amountFormatted} từ tài khoản ${fromAccount.account_number}.`,
+                    title: 'Money received',
+                    body: `You have received ${amountFormatted} from account ${fromAccount.account_number}.`,
                 });
 
                 // Gửi real-time (chỉ nhận được nếu đang online)
