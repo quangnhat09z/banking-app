@@ -1,7 +1,7 @@
 // src/admin/admin.service.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { User, UserStatus } from '../users/entities/user.entity';
 import { Account, AccountStatus } from '../accounts/entities/account.entity';
 import { GetUsersDto } from './dto/get-users.dto';
@@ -9,6 +9,7 @@ import { GetUsersDto } from './dto/get-users.dto';
 @Injectable()
 export class AdminService {
   constructor(
+    private readonly dataSource: DataSource,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     @InjectRepository(Account)
@@ -84,27 +85,32 @@ export class AdminService {
   }
 
   async updateUserStatus(id: string, status: UserStatus) {
-    const user = await this.userRepo.findOne({ where: { id } });
+    return this.dataSource.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const accountRepo = manager.getRepository(Account);
 
-    if (!user) throw new NotFoundException('User not found');
+      const user = await userRepo.findOne({ where: { id } });
 
-    user.status = status;
-    await this.userRepo.save(user);
+      if (!user) throw new NotFoundException('User not found');
 
-    // Đồng bộ trạng thái account theo user
-    await this.accountRepo.update(
-      { user_id: id },
-      { status: status === UserStatus.ACTIVE ? AccountStatus.ACTIVE : AccountStatus.LOCKED },
-    );
+      user.status = status;
+      const savedUser = await userRepo.save(user);
 
-    return {
-      message: `This account has been ${status === UserStatus.ACTIVE ? 'activated' : 'locked'}`,
-      user: {
-        id: user.id,
-        full_name: user.full_name,
-        email: user.email,
-        status: user.status,
-      },
-    };
+      // Dong bo trang thai account theo user
+      await accountRepo.update(
+        { user_id: id },
+        { status: status === UserStatus.ACTIVE ? AccountStatus.ACTIVE : AccountStatus.LOCKED },
+      );
+
+      return {
+        message: `This account has been ${status === UserStatus.ACTIVE ? 'activated' : 'locked'}`,
+        user: {
+          id: savedUser.id,
+          full_name: savedUser.full_name,
+          email: savedUser.email,
+          status: savedUser.status,
+        },
+      };
+    });
   }
 }
