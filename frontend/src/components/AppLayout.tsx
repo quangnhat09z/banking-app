@@ -1,6 +1,6 @@
 // src/components/AppLayout.tsx
 import { Sidebar } from './sidebar/Sidebar';
-import { NotificationBell } from './sidebar/SidebarComponents/NotificationBell';
+import { NotificationBell } from './common/NotificationBell/NotificationBell.index';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
 

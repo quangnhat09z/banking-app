@@ -6,7 +6,7 @@ import authService from '../../services/auth.service';
 import { NavigationLink } from './SidebarComponents/NavigationLink';
 import { Footer } from './SidebarComponents/Footer';
 import { Header } from './SidebarComponents/Header';
-import { NotificationBell } from './SidebarComponents/NotificationBell';
+// import { NotificationBell } from '../common/NotificationBell/NotificationBell.index';
 import { adminNavItems, baseNavItems } from './NavItems/NavItems';
 
 export function Sidebar() {
