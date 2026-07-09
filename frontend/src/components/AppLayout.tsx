@@ -9,24 +9,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <Sidebar />
 
-
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-8 py-8">
+      <main className="flex-1 bg-slate-50/50">
+        <header className="sticky top-0 z-40 flex h-16 w-full items-center justify-between border-b border-slate-200/60 bg-white/80 px-6 backdrop-blur-md">
+          <div className="flex flex-col">
+            <p className="text-sm font-semibold text-slate-700">Welcome back</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center">
+              <NotificationBell />
+            </div>
+          </div>
+        </header>
+
+        <div className="overflow-y-auto max-w-5xl mx-auto px-6 py-6 lg:px-8 lg:py-8">
           {children}
         </div>
       </main>
 
-      {/* Notification Bell */}
-      <div className="px-4 py-3 border-t border-slate-200/50 bg-slate-50/60">
-        <div className="flex items-center justify-between rounded-xl px-2 py-2">
-          <div>
-            <p className="text-sm font-semibold text-slate-700">Notifications</p>
-            <p className="text-xs text-slate-400 mt-0.5">Latest account updates</p>
-          </div>
-          <NotificationBell />
-        </div>
-      </div>
     </div>
   );
 }

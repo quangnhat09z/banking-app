@@ -12,9 +12,9 @@ export function NotifList({ notification, handleClickItem, timeAgo, isReceived }
             key={notification.id}
             onClick={() => handleClickItem(notification.id, notification.is_read)}
             className={`flex gap-3 px-4 py-3.5 cursor-pointer transition-all border-l-2 ${!notification.is_read
-                    ? 'bg-blue-50/20 border-blue-500 hover:bg-blue-50/40'
+                    ? 'bg-yellow-50 border-transparent hover:bg-blue-50/40'
                     : 'border-transparent hover:bg-gray-50/60'
-                }`}
+                }`} 
         >
             <div
                 className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-inner ${isReceived
@@ -47,7 +47,7 @@ export function NotifList({ notification, handleClickItem, timeAgo, isReceived }
                         <span className="w-1.5 h-1.5 bg-blue-500 rounded-full shrink-0 mt-1.5 shadow-xs" />
                     )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1 leading-relaxed line-clamp-2">
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed line-clamp-3">
                     {notification.body}
                 </p>
                 <div className="flex items-center gap-1.5 mt-2">
