@@ -1,7 +1,7 @@
 // src/transactions/transactions.controller.ts
-import { Body, Controller, Get, Post, UseGuards, Query} from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards, Query, ParseUUIDPipe, Param } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CurrentUser} from '../auth/decorators/current-user.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/decorators/current-user.decorator';
 import { TransactionsService } from './transactions.service';
 import { CreateTransferDto } from './dto/create-transfer.dto';
@@ -10,7 +10,7 @@ import { GetTransactionsDto } from './dto/get-transactions.dto';
 @Controller('transactions')
 @UseGuards(JwtAuthGuard)
 export class TransactionsController {
-  constructor(private readonly transactionsService: TransactionsService) {}
+  constructor(private readonly transactionsService: TransactionsService) { }
 
   @Post('transfer')
   async transfer(
@@ -20,7 +20,14 @@ export class TransactionsController {
     return this.transactionsService.transfer(user.userId, dto);
   }
 
- 
+  @Post(':id/reverse')
+  reverse(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.transactionsService.reverseTransaction(id, user.userId);
+  }
+
   @Get()
   async getHistory(
     @CurrentUser() user: JwtPayload,
