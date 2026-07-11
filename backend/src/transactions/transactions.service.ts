@@ -306,10 +306,7 @@ export class TransactionsService {
 
             if (!originalTx) throw new NotFoundException('Transaction not found');
 
-            // 2. Kiểm tra transition hợp lệ: COMPLETED → REVERSED
-            this.assertValidTransition(originalTx.status, TransactionStatus.REVERSED);
-
-            // 3. Kiểm tra chưa có reversal nào cho giao dịch này
+            // 2. Kiểm tra chưa có reversal nào cho giao dịch này
             const existingReversal = await txRepo.findOne({
                 where: { original_transaction_id: originalTxId },
             });
@@ -319,6 +316,10 @@ export class TransactionsService {
                     `Transaction ${originalTxId} has already been reversed`,
                 );
             }
+
+            // 3. Kiểm tra transition hợp lệ: COMPLETED → REVERSED
+            this.assertValidTransition(originalTx.status, TransactionStatus.REVERSED);
+
 
             // 4. Kiểm tra requester có phải chủ tài khoản nguồn không
             const requesterAccount = await accountRepo.findOne({
@@ -474,8 +475,7 @@ export class TransactionsService {
         const allowed = VALID_TRANSITIONS[current];
         if (!allowed.includes(next)) {
             throw new BadRequestException(
-                `Invalid transition: ${current} → ${next}. ` +
-                `Allowed: ${allowed.join(', ') || 'none'}`,
+                `Invalid transition: ${current} → ${next}.`
             );
         }
     }
