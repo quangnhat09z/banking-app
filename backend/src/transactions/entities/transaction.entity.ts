@@ -9,12 +9,15 @@ export enum TransactionType {
   TRANSFER = 'transfer',
   DEPOSIT = 'deposit',
   WITHDRAWAL = 'withdrawal',
+  REVERSAL  = 'reversal'
 }
 
+
 export enum TransactionStatus {
-  PENDING = 'pending',
-  SUCCESS = 'success',
-  FAILED = 'failed',
+  PENDING   = 'pending',
+  COMPLETED = 'completed', 
+  FAILED    = 'failed',
+  REVERSED  = 'reversed',  // Giao dịch gốc đã bị hoàn tiền
 }
 
 @Entity('transactions')
@@ -34,19 +37,21 @@ export class Transaction {
   @Column({ length: 255, nullable: true })
   description!: string;
 
-  // Chống double-submit: mỗi request sinh 1 key duy nhất
   @Column({ unique: true, nullable: true, length: 100 })
   idempotency_key!: string;
+
+  // Trỏ về giao dịch gốc khi đây là giao dịch REVERSAL
+  @Column({ nullable: true })
+  original_transaction_id!: string;
 
   @CreateDateColumn()
   created_at!: Date;
 
-  // Relations
   @Column()
   from_account_id!: string;
 
   @Column()
-  to_account_id!  : string;
+  to_account_id!: string;
 
   @ManyToOne(() => Account, (account) => account.sentTransactions)
   @JoinColumn({ name: 'from_account_id' })

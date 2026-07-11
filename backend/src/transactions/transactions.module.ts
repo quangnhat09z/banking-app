@@ -6,14 +6,16 @@ import { Transaction } from './entities/transaction.entity';
 import { Account } from '../accounts/entities/account.entity';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { LedgerModule } from '../ledger/ledger.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Transaction, Account]),
     AuthModule,
     NotificationsModule,
+    LedgerModule,
   ],
   controllers: [TransactionsController],
   providers: [TransactionsService],
 })
-export class TransactionsModule {}
+export class TransactionsModule { }
