@@ -34,12 +34,13 @@ export class AuditInterceptor implements NestInterceptor {
     const ip_address = this.resolveClientIp(request);
     const user_agent = request.headers['user-agent'] || null;
 
-    const before_data = request.auditBeforeData || null;
+    const before_data = this.resolveBeforeData(metadata.action, request);
 
     return next.handle().pipe(
       tap(async (responseData) => {
         // Ghi log audit sau khi request thành công
         try {
+          const after_data = this.resolveAfterData(metadata.action, responseData);
           await this.auditService.log({
             actor_id,
             action: metadata.action,
@@ -48,7 +49,7 @@ export class AuditInterceptor implements NestInterceptor {
             ip_address,
             user_agent,
             before_data,
-            after_data: responseData?.data || null,
+            after_data
           });
         } catch (err) {
           console.error('[AuditInterceptor] Failed to write audit log:', err);
@@ -72,6 +73,89 @@ export class AuditInterceptor implements NestInterceptor {
         return throwError(() => err);
       })
     );
+  }
+
+  private resolveBeforeData(action: AuditAction, request: any): Record<string, any> | null {
+    // Nếu trước đó đã có dữ liệu auditBeforeData, trả về nó
+    if (request.auditBeforeData) return request.auditBeforeData;
+
+    switch (action) {
+      case AuditAction.LOGIN:
+      case AuditAction.REGISTER:
+        return request.body?.email ? { email: request.body.email } : null;
+
+      case AuditAction.ACCOUNT_LOCKED:
+      case AuditAction.ACCOUNT_UNLOCKED:
+      case AuditAction.ACCOUNT_DELETED:
+        return { target_user_id: request.params?.id };
+
+      case AuditAction.TRANSFER_CREATED:
+        return {
+          to_account_number: request.body?.to_account_number,
+          amount: request.body?.amount,
+          description: request.body?.description,
+        }
+
+      case AuditAction.TRANSFER_REVERSED:
+        return {
+          original_transaction_id: request.params?.id,
+        };
+
+      default:
+        return null;
+    }
+  }
+
+  private resolveAfterData(action: AuditAction, responseData: any): Record<string, any> | null {
+    if (!responseData) return null;
+    switch (action) {
+      case AuditAction.LOGIN:
+        return responseData?.user
+          ? {
+            user_id: responseData.user.id,
+            email: responseData.user.email,
+            role: responseData.user.role
+          } : null;
+
+      case AuditAction.REGISTER:
+        return responseData?.user ? {
+          user_id: responseData.user.id,
+          email: responseData.user.email,
+          account_number: responseData.account?.account_number,
+        } : null;
+
+      case AuditAction.TRANSFER_CREATED:
+        return responseData.transaction
+          ? {
+            transaction_id: responseData.transaction.id,
+            amount: responseData.transaction.amount,
+            status: responseData.transaction.status,
+            new_balance: responseData.new_balance,
+          }
+          : null;
+
+      case AuditAction.TRANSFER_REVERSED:
+        return responseData.reversal
+          ? {
+            reversal_id: responseData.reversal.id,
+            original_transaction_id: responseData.reversal.original_transaction_id,
+            status: responseData.reversal.status,
+          }
+          : null;
+
+      case AuditAction.ACCOUNT_LOCKED:
+      case AuditAction.ACCOUNT_UNLOCKED:
+        return responseData.user
+          ? {
+            user_id: responseData.user.id,
+            status: responseData.user.status,
+          }
+          : null;
+
+      default:
+        const { password_hash, access_token, ...safe } = responseData;
+        return Object.keys(safe).length > 0 ? safe : null;
+    }
   }
 
   private resolveEntityId(request: any, responseData: any): string | undefined {
