@@ -31,7 +31,7 @@ export class AuditInterceptor implements NestInterceptor {
 
     const request = context.switchToHttp().getRequest();
     const actor_id = request.user?.userId || null;
-    const ip_address = request.ip || request.headers['x-forwarded-for'] || null;
+    const ip_address = this.resolveClientIp(request);
     const user_agent = request.headers['user-agent'] || null;
 
     const before_data = request.auditBeforeData || null;
@@ -44,7 +44,7 @@ export class AuditInterceptor implements NestInterceptor {
             actor_id,
             action: metadata.action,
             entity: metadata.entity,
-            entity_id: request.params?.id ?? responseData?.id ?? null,
+            entity_id: this.resolveEntityId(request, responseData),
             ip_address,
             user_agent,
             before_data,
@@ -72,5 +72,43 @@ export class AuditInterceptor implements NestInterceptor {
         return throwError(() => err);
       })
     );
+  }
+
+  private resolveEntityId(request: any, responseData: any): string | undefined {
+    return (
+      request.params?.id
+      ?? responseData?.transaction?.id
+      ?? responseData?.reversal?.id
+      ?? responseData?.user?.id
+      ?? responseData?.id
+      ?? undefined
+    );
+  }
+
+  private resolveClientIp(request: {
+    ip?: string;
+    headers: Record<string, string | string[] | undefined>;
+    socket?: { remoteAddress?: string };
+  }): string | undefined {
+    const forwarded = request.headers['x-forwarded-for'];
+    if (forwarded) {
+      const raw = Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0];
+      return this.normalizeIp(raw.trim());
+    }
+
+    const ip = request.ip ?? request.socket?.remoteAddress;
+    return ip ? this.normalizeIp(ip) : undefined;
+  }
+
+  private normalizeIp(ip: string): string {
+    if (ip === '::1' || ip === '::ffff:127.0.0.1') {
+      return '127.0.0.1';
+    }
+
+    if (ip.startsWith('::ffff:')) {
+      return ip.slice(7);
+    }
+
+    return ip;
   }
 }
