@@ -7,6 +7,7 @@ import { Account } from '../accounts/entities/account.entity';
 import { AuthModule } from '../auth/auth.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { LedgerModule } from '../ledger/ledger.module';
+import { AuditModule } from 'src/audit/audit.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { LedgerModule } from '../ledger/ledger.module';
     AuthModule,
     NotificationsModule,
     LedgerModule,
+    AuditModule, 
   ],
   controllers: [TransactionsController],
   providers: [TransactionsService],
