@@ -9,6 +9,8 @@ import {
   UseGuards,
   ParseUUIDPipe,
   UseInterceptors,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -70,6 +72,19 @@ export class AdminController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.auditService.findByEntity(entity, id);
+  }
+
+  @Get('accounts/:id/verify-balance')
+  verifyAccountBalance(@Param('id', ParseUUIDPipe) id: string) {
+    return this.adminService.verifyAccountBalance(id);
+  }
+
+  @Get('accounts/:id/ledger-entries')
+  getAccountLedgerEntries(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    return this.adminService.getAccountLedgerEntries(id, limit);
   }
 
 }

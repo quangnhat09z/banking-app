@@ -59,7 +59,7 @@ export class LedgerService {
     }
 
     // lấy lịch sử bút toán của một account
-    async getEntriesByAccountId(manager: EntityManager, account_id: string, limit: 20): Promise<LedgerEntry[]> {
+    async getEntriesByAccountId(manager: EntityManager, account_id: string, limit = 20): Promise<LedgerEntry[]> {
         return manager.getRepository(LedgerEntry)
             .find({
                 where: { account_id },

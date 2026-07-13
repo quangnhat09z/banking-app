@@ -5,6 +5,7 @@ import { DataSource, Repository } from 'typeorm';
 import { User, UserStatus } from '../users/entities/user.entity';
 import { Account, AccountStatus } from '../accounts/entities/account.entity';
 import { GetUsersDto } from './dto/get-users.dto';
+import { LedgerService } from '../ledger/ledger.service';
 
 @Injectable()
 export class AdminService {
@@ -14,6 +15,7 @@ export class AdminService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Account)
     private readonly accountRepo: Repository<Account>,
+    private readonly ledgerService: LedgerService,
   ) {}
 
   async getUsers(dto: GetUsersDto) {
@@ -110,6 +112,53 @@ export class AdminService {
           email: savedUser.email,
           status: savedUser.status,
         },
+      };
+    });
+  }
+
+  async verifyAccountBalance(accountId: string) {
+    return this.dataSource.transaction(async (manager) => {
+      const account = await manager.getRepository(Account).findOne({
+        where: { id: accountId },
+      });
+
+      if (!account) throw new NotFoundException('Account not found');
+
+      const ledgerBalance = await this.ledgerService.calculateBalance(manager, accountId);
+      const isMatched = await this.ledgerService.verifyBalance(
+        manager,
+        accountId,
+        account.balance,
+      );
+
+      return {
+        account_id: account.id,
+        account_number: account.account_number,
+        account_balance: account.balance,
+        ledger_balance: ledgerBalance.toFixed(2),
+        matched: isMatched,
+      };
+    });
+  }
+
+  async getAccountLedgerEntries(accountId: string, limit = 20) {
+    return this.dataSource.transaction(async (manager) => {
+      const account = await manager.getRepository(Account).findOne({
+        where: { id: accountId },
+      });
+
+      if (!account) throw new NotFoundException('Account not found');
+
+      const entries = await this.ledgerService.getEntriesByAccountId(
+        manager,
+        accountId,
+        limit,
+      );
+
+      return {
+        account_id: account.id,
+        account_number: account.account_number,
+        entries,
       };
     });
   }
