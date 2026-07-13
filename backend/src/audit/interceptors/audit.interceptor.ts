@@ -113,6 +113,7 @@ export class AuditInterceptor implements NestInterceptor {
         return responseData?.user
           ? {
             user_id: responseData.user.id,
+            full_name: responseData.user.full_name,
             email: responseData.user.email,
             role: responseData.user.role
           } : null;
@@ -120,6 +121,7 @@ export class AuditInterceptor implements NestInterceptor {
       case AuditAction.REGISTER:
         return responseData?.user ? {
           user_id: responseData.user.id,
+          full_name: responseData.user.full_name,
           email: responseData.user.email,
           account_number: responseData.account?.account_number,
         } : null;
@@ -128,6 +130,10 @@ export class AuditInterceptor implements NestInterceptor {
         return responseData.transaction
           ? {
             transaction_id: responseData.transaction.id,
+            from_account_number: responseData.transaction.from_account_number,
+            to_account_number: responseData.transaction.to_account_number,
+            from_user_id: responseData.transaction.from_user_id,
+            to_user_id: responseData.transaction.to_user_id,
             amount: responseData.transaction.amount,
             status: responseData.transaction.status,
             new_balance: responseData.new_balance,

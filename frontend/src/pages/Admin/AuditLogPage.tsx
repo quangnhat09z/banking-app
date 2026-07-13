@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import Spinner from '../../components/common/Spinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
-import JsonViewer from '../../components/common/JsonViewer';
 import auditService from '../../services/audit.service';
 import type { AuditLog, AuditAction, AuditEntity, AuditLogFilters } from '../../types/audit.types';
 
@@ -46,6 +45,193 @@ function formatDate(dateStr: string) {
 function truncate(str: string | null, max = 12): string {
   if (!str) return '—';
   return str.length > max ? `${str.slice(0, max)}...` : str;
+}
+
+function formatMoney(value: unknown) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return '—';
+
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function valueOf(log: AuditLog, key: string) {
+  return log.after_data?.[key] ?? log.before_data?.[key] ?? null;
+}
+
+function formatStatus(status: unknown) {
+  if (typeof status !== 'string' || !status.trim()) {
+    return (
+      <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-gray-100 text-gray-500">
+        -
+      </span>
+    );
+  }
+
+  const normalizedStatus = status.toLowerCase();
+  const label = normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
+
+  const statusClassMap: Record<string, string> = {
+    active: 'bg-green-50 text-green-600',
+    unlocked: 'bg-green-50 text-green-600',
+    completed: 'bg-green-50 text-green-600',
+    success: 'bg-green-50 text-green-600',
+    successful: 'bg-green-50 text-green-600',
+
+    pending: 'bg-yellow-50 text-yellow-700',
+    processing: 'bg-yellow-50 text-yellow-700',
+
+    locked: 'bg-red-50 text-red-600',
+    deleted: 'bg-red-50 text-red-600',
+    failed: 'bg-red-50 text-red-600',
+
+    reversed: 'bg-orange-50 text-orange-600',
+    cancelled: 'bg-orange-50 text-orange-600',
+  };
+
+  const colorClass = statusClassMap[normalizedStatus] ?? 'bg-gray-100 text-gray-500';
+
+  return (
+    <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${colorClass}`}>
+      {label}
+    </span>
+  );
+}
+
+function getActorInfo(log: AuditLog) {
+  const name = valueOf(log, 'full_name');
+  const email = valueOf(log, 'email');
+  const role = valueOf(log, 'role');
+  const account = valueOf(log, 'from_account_number');
+
+  if (name || email) {
+    return {
+      primary: String(name || email),
+      secondary: [email && name ? email : null, role ? `Role: ${role}` : null]
+        .filter(Boolean)
+        .join(' - '),
+    };
+  }
+
+  if (account) {
+    return {
+      primary: `Account ${account}`,
+      secondary: log.actor_id ? `User ${truncate(log.actor_id)}` : '',
+    };
+  }
+
+  return {
+    primary: log.actor_id ? `User ${truncate(log.actor_id)}` : 'System / Unknown',
+    secondary: '',
+  };
+}
+
+function getTargetInfo(log: AuditLog) {
+  switch (log.action) {
+    case 'LOGIN':
+      return {
+        primary: valueOf(log, 'email') ? String(valueOf(log, 'email')) : 'User login',
+        secondary: 'Authentication event',
+      };
+
+    case 'REGISTER':
+      return {
+        primary: valueOf(log, 'full_name') ? String(valueOf(log, 'full_name')) : 'New customer',
+        secondary: valueOf(log, 'account_number')
+          ? `Account ${valueOf(log, 'account_number')}`
+          : String(valueOf(log, 'email') ?? ''),
+      };
+
+    case 'TRANSFER_CREATED':
+      return {
+        primary: valueOf(log, 'to_account_number')
+          ? `To account ${valueOf(log, 'to_account_number')}`
+          : 'Receiver account',
+        secondary: valueOf(log, 'to_user_id')
+          ? `Receiver user ${truncate(String(valueOf(log, 'to_user_id')))}`
+          : '',
+      };
+
+    case 'TRANSFER_REVERSED':
+      return {
+        primary: 'Reversed transaction',
+        secondary: valueOf(log, 'original_transaction_id')
+          ? `Original ${truncate(String(valueOf(log, 'original_transaction_id')))}`
+          : '',
+      };
+
+    case 'ACCOUNT_LOCKED':
+    case 'ACCOUNT_UNLOCKED':
+    case 'ACCOUNT_DELETED':
+      return {
+        primary: valueOf(log, 'target_user_id')
+          ? `Target user ${truncate(String(valueOf(log, 'target_user_id')))}`
+          : 'Target account',
+        secondary: log.entity_id ? `Record ${truncate(log.entity_id)}` : '',
+      };
+
+    default:
+      return {
+        primary: log.entity ? ENTITY_LABEL[log.entity] : 'Record',
+        secondary: log.entity_id ? truncate(log.entity_id) : '',
+      };
+  }
+}
+
+function getDetailInfo(log: AuditLog) {
+  switch (log.action) {
+    case 'LOGIN':
+      return {
+        primary: 'Signed in successfully',
+        secondary: log.ip_address ? `IP ${log.ip_address}` : '',
+      };
+
+    case 'REGISTER':
+      return {
+        primary: 'Created a new customer profile',
+        secondary: valueOf(log, 'account_number')
+          ? `Account number ${valueOf(log, 'account_number')}`
+          : '',
+      };
+
+    case 'TRANSFER_CREATED':
+      return {
+        primary: `${formatMoney(valueOf(log, 'amount'))} transferred`,
+        secondary: [
+          valueOf(log, 'from_account_number') ? `From ${valueOf(log, 'from_account_number')}` : null,
+          valueOf(log, 'description') ? `Note: ${valueOf(log, 'description')}` : null,
+        ].filter(Boolean).join(' - '),
+      };
+
+    case 'TRANSFER_REVERSED':
+      return {
+        primary: 'Transfer reversal completed',
+        secondary: valueOf(log, 'reversal_id')
+          ? `Reversal ${truncate(String(valueOf(log, 'reversal_id')))}`
+          : '',
+      };
+
+    case 'ACCOUNT_LOCKED':
+    case 'ACCOUNT_UNLOCKED':
+    case 'ACCOUNT_DELETED':
+      return {
+        primary: log.action === 'ACCOUNT_LOCKED'
+          ? 'Account was locked'
+          : log.action === 'ACCOUNT_UNLOCKED'
+            ? 'Account was unlocked'
+            : 'Account was deleted',
+        secondary: valueOf(log, 'status') ? `New status: ${valueOf(log, 'status')}` : '',
+      };
+
+    default:
+      return {
+        primary: 'Audit event recorded',
+        secondary: '',
+      };
+  }
 }
 
 const LIMIT = 10;
@@ -136,7 +322,7 @@ export default function AuditLogPage() {
                   : 'border-gray-200 text-gray-500 hover:border-gray-300'
                 }`}
             >
-              {e === 'all' ? 'Tất cả' : ENTITY_LABEL[e]}
+              {e === 'all' ? 'All' : ENTITY_LABEL[e]}
             </button>
           ))}
         </div>
@@ -154,22 +340,21 @@ export default function AuditLogPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <p className="text-sm text-gray-400">Không có bản ghi nào</p>
+              <p className="text-sm text-gray-400">No audit logs found</p>
             </div>
           ) : (
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
 
               {/* Table header */}
-              <div className="grid grid-cols-[1.2fr_1fr_0.8fr_0.8fr_1fr_1fr_1fr] gap-3
+              <div className="grid grid-cols-[1.1fr_1fr_1.4fr_1.4fr_1.6fr_0.9fr] gap-3
                 px-5 py-3 bg-gray-50 border-b border-gray-100
                 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                 <span>Time</span>
                 <span>Action</span>
-                <span>Entity</span>
-                <span>Actor ID</span>
-                <span>Entity ID</span>
-                <span>Before</span>
-                <span>After</span>
+                <span>Actor</span>
+                <span>Target</span>
+                <span>Detail</span>
+                <span>Status</span>
               </div>
 
               {/* Rows */}
@@ -179,11 +364,15 @@ export default function AuditLogPage() {
                     label: log.action,
                     color: 'bg-gray-100 text-gray-500',
                   };
+                  const actor = getActorInfo(log);
+                  const target = getTargetInfo(log);
+                  const detail = getDetailInfo(log);
+                  const status = valueOf(log, 'status');
 
                   return (
                     <div
                       key={log.id}
-                      className="grid grid-cols-[1.2fr_1fr_0.8fr_0.8fr_1fr_1fr_1fr]
+                      className="grid grid-cols-[1.1fr_1fr_1.4fr_1.4fr_1.6fr_0.9fr]
                         gap-3 items-start px-5 py-3.5
                         hover:bg-gray-50 transition-colors"
                     >
@@ -205,51 +394,66 @@ export default function AuditLogPage() {
                           px-2 py-0.5 rounded-full ${actionCfg.color}`}>
                           {actionCfg.label}
                         </span>
-                      </div>
-
-                      {/* Entity */}
-                      <div>
-                        <span className="text-xs text-gray-500 font-medium">
+                        <p className="text-[11px] text-gray-400 mt-1">
                           {log.entity ? ENTITY_LABEL[log.entity] : '—'}
-                        </span>
+                        </p>
                       </div>
 
-                      {/* Actor ID */}
+                      {/* Actor */}
                       <div>
-                        <span
-                          className="text-xs font-mono text-gray-500"
-                          title={log.actor_id ?? ''}
-                        >
-                          {truncate(log.actor_id)}
-                        </span>
+                        <p className="text-xs text-gray-700 font-semibold">
+                          {actor.primary}
+                        </p>
+                        {actor.secondary && (
+                          <p className="text-[11px] text-gray-400 mt-0.5 break-words">
+                            {actor.secondary}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Target */}
+                      <div>
+                        <p className="text-xs text-gray-700 font-semibold">
+                          {target.primary}
+                        </p>
+                        {target.secondary && (
+                          <p className="text-[11px] text-gray-400 mt-0.5 break-words">
+                            {target.secondary}
+                          </p>
+                        )}
                       </div>
 
                       {/* Entity ID */}
-                      <div>
+                      {/* <div>
                         <span
                           className="text-xs font-mono text-gray-500"
                           title={log.entity_id ?? ''}
                         >
                           {truncate(log.entity_id)}
                         </span>
+                      </div> */}
+
+                      {/* Detail */}
+                      <div>
+                        <p className="text-xs text-gray-700 font-medium">
+                          {detail.primary}
+                        </p>
+                        {detail.secondary && (
+                          <p className="text-[11px] text-gray-400 mt-0.5 break-words">
+                            {detail.secondary}
+                          </p>
+                        )}
                       </div>
 
-                      {/* Before data */}
+                      {/* Status */}
                       <div>
-                        <JsonViewer
-                          data={log.before_data}
-                          label="before"
-                          variant="before"
-                        />
-                      </div>
-
-                      {/* After data */}
-                      <div>
-                        <JsonViewer
-                          data={log.after_data}
-                          label="after"
-                          variant="after"
-                        />
+                        {formatStatus(status)}
+                        
+                        {/* {log.entity_id && (
+                          <p className="text-[11px] text-gray-400 mt-1 font-mono" title={log.entity_id}>
+                            #{truncate(log.entity_id, 8)}
+                          </p>
+                        )} */}
                       </div>
                     </div>
                   );

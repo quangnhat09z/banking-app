@@ -285,7 +285,12 @@ export class TransactionsService {
                 this.notificationsGateway.emitToUser(receiverAccount.user_id, receiverNotif);
             }
 
-            return this.formatTransactionResponse(savedTx, newFromBalance);
+            return this.formatTransactionResponse(savedTx, newFromBalance, {
+                from_account_number: fromAccount.account_number,
+                to_account_number: toAccount.account_number,
+                from_user_id: fromAccount.user_id,
+                to_user_id: toAccount.user_id,
+            });
         });
     }
 
@@ -480,7 +485,16 @@ export class TransactionsService {
         }
     }
 
-    private formatTransactionResponse(tx: Transaction, newBalance?: string) {
+    private formatTransactionResponse(
+        tx: Transaction,
+        newBalance?: string,
+        parties?: {
+            from_account_number?: string;
+            to_account_number?: string;
+            from_user_id?: string;
+            to_user_id?: string;
+        },
+    ) {
         return {
             message: 'Transaction processed successfully',
             transaction: {
@@ -489,6 +503,7 @@ export class TransactionsService {
                 status: tx.status,
                 description: tx.description,
                 created_at: tx.created_at,
+                ...parties,
             },
             ...(newBalance && { new_balance: newBalance }),
         };
