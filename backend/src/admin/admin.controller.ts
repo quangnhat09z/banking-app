@@ -9,6 +9,7 @@ import {
   UseGuards,
   ParseUUIDPipe,
   UseInterceptors,
+  Delete,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -24,6 +25,10 @@ import { AuditAction, AuditEntity } from '../audit/entities/audit-log.entity';
 import { AuditInterceptor } from '../audit/interceptors/audit.interceptor';
 import { AuditService } from '../audit/audit.service';
 
+import { UsersService } from '../users/users.service';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/decorators/current-user.decorator';
+
 class UpdateStatusDto {
   @IsEnum(UserStatus)
   status!: UserStatus;
@@ -35,7 +40,8 @@ class UpdateStatusDto {
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
-    private readonly auditService: AuditService
+    private readonly auditService: AuditService,
+    private readonly usersService: UsersService,
   ) { }
 
   @Get('users')
@@ -72,4 +78,39 @@ export class AdminController {
     return this.auditService.findByEntity(entity, id);
   }
 
+  // xóa mềm user
+  @Delete('users/:id')
+  @UseInterceptors(AuditInterceptor)
+  @AuditLog({ action: AuditAction.ACCOUNT_DELETED, entity: AuditEntity.USER })
+  async softDeleteUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() admin: JwtPayload,
+  ) {
+    await this.usersService.softDeleteUser(id, admin.userId);
+    return { message: 'User soft deleted successfully' };
+  }
+
+  // Lấy danh sách user đã bị xóa mềm
+  @Get('users/deleted')
+  getDeletedUsers() {
+    return this.usersService.findDeletedUsers();
+  }
+
+  // Lấy lịch sử thay đổi của tài khoản
+  @Get('users/:id/history')
+  getAccountHistory(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.getAccountHistory(id);
+  }
+
+  // Cập nhật email của user
+  @Patch('users/:id/email')
+  @UseInterceptors(AuditInterceptor)
+  @AuditLog({ action: AuditAction.USER_UPDATED, entity: AuditEntity.USER })
+  updateEmail(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('email') newEmail: string,
+    @CurrentUser() admin: JwtPayload,
+  ) {
+    return this.usersService.updateEmail(id, newEmail, admin.userId);
+  }
 }
