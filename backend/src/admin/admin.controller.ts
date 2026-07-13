@@ -57,8 +57,10 @@ export class AdminController {
   getAuditLogs(
     @Query('page') page = 1,
     @Query('limit') limit = 20,
+    @Query('action') action?: AuditAction,
+    @Query('entity') entity?: AuditEntity,
   ) {
-    return this.auditService.findAll(+page, +limit);
+    return this.auditService.findAll(+page, +limit, { action, entity });
   }
 
   // Xem audit log của 1 entity cụ thể

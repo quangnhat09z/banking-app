@@ -1,7 +1,7 @@
 // src/audit/audit.service.ts
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { AuditLog, AuditAction, AuditEntity } from './entities/audit-log.entity';
 
 export interface CreateAuditLogDto {
@@ -27,8 +27,23 @@ export class AuditService {
         await this.auditLogRepo.save(auditLog);
     }
 
-    async findAll(page = 1, limit = 20) {
+    async findAll(
+        page = 1,
+        limit = 20,
+        filters: { action?: AuditAction; entity?: AuditEntity } = {},
+    ) {
+        const where: FindOptionsWhere<AuditLog> = {};
+
+        if (filters.action) {
+            where.action = filters.action;
+        }
+
+        if (filters.entity) {
+            where.entity = filters.entity;
+        }
+
         const [logs, total] = await this.auditLogRepo.findAndCount({
+            where,
             order: { created_at: 'DESC' },
             skip: (page - 1) * limit,
             take: limit,

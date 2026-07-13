@@ -15,6 +15,7 @@ import Transfer from './pages/Transfer/TransferPage';
 // Admin routes
 import AdminRoute from './components/AdminRoute';
 import AdminUsersPage from './pages/Admin/AdminUsersPage';
+import AuditLogPage from './pages/Admin/AuditLogPage';
 
 export default function App() {
   const { isAuthenticated } = useAuthStore();
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
         <Route path="/transfer" element={<ProtectedRoute><Transfer /></ProtectedRoute>} />
         <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+        <Route path="/admin/audit-logs" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
        
         {/* Fallback */}
         <Route path="*" element={<Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />} />

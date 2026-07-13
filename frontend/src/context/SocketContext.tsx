@@ -38,7 +38,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
             ]);
             setNotifications(notifs);
             setUnreadCount(count);
-            console.log('[Socket] Initial notifications loaded:', notifs.length, 'Unread count:', count);
+            // console.log('[Socket] Initial notifications loaded:', notifs.length, 'Unread count:', count);
         } catch {
             //
         }
