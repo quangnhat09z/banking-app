@@ -2,8 +2,10 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { Reflector } from '@nestjs/core';
+import { DataSource } from 'typeorm';
 import { AuditAction, AuditEntity } from '../entities/audit-log.entity';
 import { AuditService } from '../audit.service';
+import { User } from '../../users/entities/user.entity';
 
 // Metadata key — dùng với @AuditLog() decorator
 export const AUDIT_KEY = 'audit_metadata';
@@ -18,6 +20,7 @@ export class AuditInterceptor implements NestInterceptor {
   constructor(
     private readonly auditService: AuditService,
     private readonly reflector: Reflector,
+    private readonly dataSource: DataSource,
   ) { }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -34,13 +37,14 @@ export class AuditInterceptor implements NestInterceptor {
     const ip_address = this.resolveClientIp(request);
     const user_agent = request.headers['user-agent'] || null;
 
-    const before_data = this.resolveBeforeData(metadata.action, request);
+    const beforeDataPromise = this.resolveBeforeData(metadata.action, request);
 
     return next.handle().pipe(
       tap(async (responseData) => {
         // Ghi log audit sau khi request thành công
         try {
-          const after_data = this.resolveAfterData(metadata.action, responseData);
+          const before_data = await beforeDataPromise;
+          const after_data = await this.resolveAfterData(metadata.action, request, responseData, before_data);
           await this.auditService.log({
             actor_id,
             action: metadata.action,
@@ -66,7 +70,7 @@ export class AuditInterceptor implements NestInterceptor {
             entity_id: request.params?.id ?? null,
             ip_address,
             user_agent,
-            before_data,
+            before_data: null,
             after_data: { error: err.message, status: err.status },
           }).catch(console.error);
         }
@@ -75,7 +79,7 @@ export class AuditInterceptor implements NestInterceptor {
     );
   }
 
-  private resolveBeforeData(action: AuditAction, request: any): Record<string, any> | null {
+  private async resolveBeforeData(action: AuditAction, request: any): Promise<Record<string, any> | null> {
     // Nếu trước đó đã có dữ liệu auditBeforeData, trả về nó
     if (request.auditBeforeData) return request.auditBeforeData;
 
@@ -88,6 +92,9 @@ export class AuditInterceptor implements NestInterceptor {
       case AuditAction.ACCOUNT_UNLOCKED:
       case AuditAction.ACCOUNT_DELETED:
         return { target_user_id: request.params?.id };
+
+      case AuditAction.USER_UPDATED:
+        return this.resolveUserUpdateBeforeData(request);
 
       case AuditAction.TRANSFER_CREATED:
         return {
@@ -106,7 +113,27 @@ export class AuditInterceptor implements NestInterceptor {
     }
   }
 
-  private resolveAfterData(action: AuditAction, responseData: any): Record<string, any> | null {
+  private async resolveUserUpdateBeforeData(request: any): Promise<Record<string, any> | null> {
+    const userId = request.params?.id;
+    if (!userId) return null;
+
+    const user = await this.dataSource.getRepository(User).findOne({ where: { id: userId } });
+    if (!user) return null;
+
+    return {
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+      status: user.status,
+    };
+  }
+
+  private async resolveAfterData(
+    action: AuditAction,
+    request: any,
+    responseData: any,
+    beforeData: Record<string, any> | null,
+  ): Promise<Record<string, any> | null> {
     if (!responseData) return null;
     switch (action) {
       case AuditAction.LOGIN:
@@ -158,10 +185,53 @@ export class AuditInterceptor implements NestInterceptor {
           }
           : null;
 
+      case AuditAction.ACCOUNT_DELETED:
+        return this.resolveDeletedUserAfterData(request, responseData);
+
+      case AuditAction.USER_UPDATED:
+        return this.resolveUserUpdateAfterData(beforeData, responseData);
+
       default:
         const { password_hash, access_token, ...safe } = responseData;
         return Object.keys(safe).length > 0 ? safe : null;
     }
+  }
+
+  private async resolveDeletedUserAfterData(request: any, responseData: any): Promise<Record<string, any> | null> {
+    const userId = request.params?.id;
+    if (!userId) return { message: responseData.message };
+
+    const deletedUser = await this.dataSource.getRepository(User).findOne({
+      where: { id: userId },
+      withDeleted: true,
+    });
+
+    return {
+      message: responseData.message ?? 'User soft deleted successfully',
+      deleted_at: deletedUser?.deleted_at ?? null,
+    };
+  }
+
+  private resolveUserUpdateAfterData(
+    beforeData: Record<string, any> | null,
+    responseData: any,
+  ): Record<string, any> | null {
+    if (!beforeData) return null;
+
+    const changedBefore: Record<string, any> = {};
+    const changedAfter: Record<string, any> = {};
+
+    for (const [key, beforeValue] of Object.entries(beforeData)) {
+      if (responseData[key] !== beforeValue) {
+        changedBefore[key] = beforeValue;
+        changedAfter[key] = responseData[key];
+      }
+    }
+
+    Object.keys(beforeData).forEach((key) => delete beforeData[key]);
+    Object.assign(beforeData, changedBefore);
+
+    return Object.keys(changedAfter).length > 0 ? changedAfter : null;
   }
 
   private resolveEntityId(request: any, responseData: any): string | undefined {
