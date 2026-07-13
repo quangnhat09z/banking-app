@@ -1,3 +1,4 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -12,10 +13,12 @@ import { AdminModule } from './admin/admin.module';
 
 import { NotificationsModule } from './notifications/notifications.module';
 import { Notification } from './notifications/entities/notification.entity';
-import { LedgerController } from './ledger/ledger.controller';
-import { LedgerService } from './ledger/ledger.service';
+
 import { LedgerModule } from './ledger/ledger.module';
 import { LedgerEntry } from './ledger/entities/ledger-entry.entity';
+
+import { AuditModule } from './audit/audit.module';
+import { AuditLog } from './audit/entities/audit-log.entity';
 
 
 
@@ -27,7 +30,7 @@ import { LedgerEntry } from './ledger/entities/ledger-entry.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Account, Transaction, Notification, LedgerEntry],
+        entities: [User, Account, Transaction, Notification, LedgerEntry, AuditLog],
         synchronize: true,
       }),
     }),
@@ -38,8 +41,9 @@ import { LedgerEntry } from './ledger/entities/ledger-entry.entity';
     AdminModule,
     NotificationsModule,
     LedgerModule,
+    AuditModule,
   ],
-  controllers: [LedgerController],
-  providers: [LedgerService],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}
