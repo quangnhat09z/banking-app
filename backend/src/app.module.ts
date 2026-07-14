@@ -8,9 +8,9 @@ import { AccountsModule } from './accounts/accounts.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { User } from './users/entities/user.entity';
 import { Account } from './accounts/entities/account.entity';
-import { Transaction } from './transactions/entities/transaction.entity';
+import { Transaction } from './transactions/entities/transaction.entity'
+import { AccountHistory } from './accounts/entities/account-history.entity';
 import { AdminModule } from './admin/admin.module';
-
 import { NotificationsModule } from './notifications/notifications.module';
 import { Notification } from './notifications/entities/notification.entity';
 
@@ -21,7 +21,6 @@ import { AuditModule } from './audit/audit.module';
 import { AuditLog } from './audit/entities/audit-log.entity';
 
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -30,7 +29,7 @@ import { AuditLog } from './audit/entities/audit-log.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Account, Transaction, Notification, LedgerEntry, AuditLog],
+        entities: [User, Account, Transaction, Notification, LedgerEntry, AuditLog, AccountHistory],
         synchronize: true,
       }),
     }),

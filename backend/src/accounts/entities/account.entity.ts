@@ -2,6 +2,7 @@
 import {
   Entity, PrimaryGeneratedColumn, Column,
   CreateDateColumn, ManyToOne, OneToMany, JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Transaction } from '../../transactions/entities/transaction.entity';
@@ -46,4 +47,7 @@ export class Account {
 
   @OneToMany(() => Transaction, (tx) => tx.toAccount)
   receivedTransactions!: Transaction[];
+
+  @DeleteDateColumn({ nullable: true })
+  deleted_at!: Date | null;
 }

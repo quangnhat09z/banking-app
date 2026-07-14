@@ -2,6 +2,7 @@
 import {
   Entity, PrimaryGeneratedColumn, Column,
   CreateDateColumn, UpdateDateColumn, OneToMany,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Account } from '../../accounts/entities/account.entity';
 
@@ -21,7 +22,7 @@ export class User {
   id!: string;
 
   @Column({ length: 100 })
-  full_name!  : string;
+  full_name!: string;
 
   @Column({ unique: true, length: 150 })
   email!: string;
@@ -40,6 +41,9 @@ export class User {
 
   @UpdateDateColumn()
   updated_at!: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deleted_at!: Date | null;
 
   @OneToMany(() => Account, (account) => account.user)
   accounts!: Account[];
