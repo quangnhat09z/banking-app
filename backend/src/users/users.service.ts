@@ -68,6 +68,7 @@ export class UsersService {
         if (emailTaken) throw new BadRequestException('Email is already taken');
 
         // lưu snapshot dữ liệu trước khi thay đổi
+        const admin = await this.userRepo.findOne({ where: { id: changeBy } });
         const account = await this.accountRepo.findOne({ where: { user_id: userId } });
         if (account) {
             const history = this.historyRepo.create({
@@ -75,7 +76,7 @@ export class UsersService {
                 change_type: AccountHistoryChangeType.EMAIL_CHANGED,
                 before_data: { email: user.email },
                 after_data: { email: newEmail },
-                changed_by: changeBy,
+                changed_by: admin?.full_name || 'Unknown Admin',
             });
             await this.historyRepo.save(history);
         }

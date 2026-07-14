@@ -35,6 +35,7 @@ export class AdminService {
         'user.status',
         'user.created_at',
         // Không select password_hash
+        'account.id',
         'account.account_number',
         'account.balance',
         'account.status',
@@ -60,7 +61,6 @@ export class AdminService {
     }
 
     const [users, total] = await qb.getManyAndCount();
-
     return {
       data: users.map((user) => ({
         id: user.id,
@@ -71,6 +71,7 @@ export class AdminService {
         created_at: user.created_at,
         account: user.accounts?.[0]
           ? {
+            account_id: user.accounts[0].id,
             account_number: user.accounts[0].account_number,
             balance: user.accounts[0].balance,
             status: user.accounts[0].status,
