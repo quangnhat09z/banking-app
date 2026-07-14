@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { AuditLog, AuditAction, AuditEntity } from './entities/audit-log.entity';
+import { GetAuditLogsDto } from 'src/admin/dto/get-audit-logs.dto';
 
 export interface CreateAuditLogDto {
     actor_id?: string;
@@ -27,11 +28,12 @@ export class AuditService {
         await this.auditLogRepo.save(auditLog);
     }
 
-    async findAll(
-        page = 1,
-        limit = 20,
-        filters: { action?: AuditAction; entity?: AuditEntity } = {},
-    ) {
+    async findAll(dto: GetAuditLogsDto) {
+        const { page = 1, limit = 20 } = dto;
+        const filters = {
+            action: dto.action,
+            entity: dto.entity,
+        };
         const where: FindOptionsWhere<AuditLog> = {};
 
         if (filters.action) {

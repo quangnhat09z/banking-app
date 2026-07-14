@@ -5,6 +5,9 @@ import { DataSource, Repository } from 'typeorm';
 import { User, UserStatus } from '../users/entities/user.entity';
 import { Account, AccountStatus } from '../accounts/entities/account.entity';
 import { GetUsersDto } from './dto/get-users.dto';
+import { GetLedgerEntriesDto } from './dto/get-ledger-entries.dto';
+import { LedgerService } from '../ledger/ledger.service';
+import { LedgerEntry } from 'src/ledger/entities/ledger-entry.entity';
 
 @Injectable()
 export class AdminService {
@@ -14,7 +17,8 @@ export class AdminService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Account)
     private readonly accountRepo: Repository<Account>,
-  ) {}
+    private readonly ledgerService: LedgerService,
+  ) { }
 
   async getUsers(dto: GetUsersDto) {
     const { page = 1, limit = 10, status, role, search } = dto;
@@ -67,10 +71,10 @@ export class AdminService {
         created_at: user.created_at,
         account: user.accounts?.[0]
           ? {
-              account_number: user.accounts[0].account_number,
-              balance: user.accounts[0].balance,
-              status: user.accounts[0].status,
-            }
+            account_number: user.accounts[0].account_number,
+            balance: user.accounts[0].balance,
+            status: user.accounts[0].status,
+          }
           : null,
       })),
       pagination: {
@@ -109,6 +113,88 @@ export class AdminService {
           full_name: savedUser.full_name,
           email: savedUser.email,
           status: savedUser.status,
+        },
+      };
+    });
+  }
+
+  async verifyAccountBalance(accountId: string) {
+    return this.dataSource.transaction(async (manager) => {
+      const account = await manager.getRepository(Account).findOne({
+        where: { id: accountId },
+      });
+
+      if (!account) throw new NotFoundException('Account not found');
+
+      const ledgerBalance = await this.ledgerService.calculateBalance(manager, accountId);
+      const isMatched = await this.ledgerService.verifyBalance(
+        manager,
+        accountId,
+        account.balance,
+      );
+
+      return {
+        account_id: account.id,
+        account_number: account.account_number,
+        account_balance: account.balance,
+        ledger_balance: ledgerBalance.toFixed(2),
+        matched: isMatched,
+      };
+    });
+  }
+
+  async getAllLedgerEntries(dto: GetLedgerEntriesDto) {
+    const { page = 1, limit = 20 } = dto;
+    return this.dataSource.transaction(async (manager) => {
+      const entries = await this.ledgerService.getAllEntries(manager, limit, page);
+      const total = await manager.getRepository(LedgerEntry).count();
+      return {
+        entries,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+          hasNextPage: page < Math.ceil(total / limit),
+          hasPrevPage: page > 1,
+        }
+      };
+    });
+  }
+
+  async getAccountLedgerEntries(accountId: string, dto: GetLedgerEntriesDto) {
+    const { page = 1, limit = 20 } = dto;
+    return this.dataSource.transaction(async (manager) => {
+      const account = await manager.getRepository(Account).findOne({
+        where: { id: accountId },
+      });
+
+      if (!account) throw new NotFoundException('Account not found');
+
+      const entries = await this.ledgerService.getEntriesByAccountId(
+        manager,
+        accountId,
+        limit,
+        page,
+      );
+
+      const total = await manager.getRepository(LedgerEntry).count({
+        where: { account_id: accountId },
+      });
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        account_id: account.id,
+        account_number: account.account_number,
+        entries,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
         },
       };
     });

@@ -8,13 +8,15 @@ import { Account } from '../accounts/entities/account.entity';
 import { AuthModule } from '../auth/auth.module';
 import { AuditModule } from 'src/audit/audit.module';
 import { UsersModule } from 'src/users/users.module';
+import { LedgerModule } from '../ledger/ledger.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Account]),
     AuthModule,
     UsersModule,
-    AuditModule, 
+    AuditModule,
+    LedgerModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

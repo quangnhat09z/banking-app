@@ -58,13 +58,23 @@ export class LedgerService {
         throw new ForbiddenException('Ledger entries are immutable — DELETE is not allowed',);
     }
 
+    // lấy toàn bộ bút toán 
+    async getAllEntries(manager: EntityManager, limit = 20, page = 1): Promise<LedgerEntry[]> {
+        return manager.getRepository(LedgerEntry).find({
+            order: { created_at: 'DESC' },
+            take: limit,
+            skip: (page - 1) * limit,
+        });
+    }
+
     // lấy lịch sử bút toán của một account
-    async getEntriesByAccountId(manager: EntityManager, account_id: string, limit: 20): Promise<LedgerEntry[]> {
+    async getEntriesByAccountId(manager: EntityManager, account_id: string, limit = 20, page = 1): Promise<LedgerEntry[]> {
         return manager.getRepository(LedgerEntry)
             .find({
                 where: { account_id },
                 order: { created_at: 'DESC' },
                 take: limit,
+                skip: (page - 1) * limit,
             });
     }
 

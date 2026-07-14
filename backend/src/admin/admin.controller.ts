@@ -9,6 +9,8 @@ import {
   UseGuards,
   ParseUUIDPipe,
   UseInterceptors,
+  DefaultValuePipe,
+  ParseIntPipe,
   Delete,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -17,6 +19,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole, UserStatus } from '../users/entities/user.entity';
 import { AdminService } from './admin.service';
 import { GetUsersDto } from './dto/get-users.dto';
+import { GetLedgerEntriesDto } from './dto/get-ledger-entries.dto';
 import { IsEnum } from 'class-validator';
 
 //log
@@ -28,6 +31,7 @@ import { AuditService } from '../audit/audit.service';
 import { UsersService } from '../users/users.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/decorators/current-user.decorator';
+import { GetAuditLogsDto } from './dto/get-audit-logs.dto';
 
 class UpdateStatusDto {
   @IsEnum(UserStatus)
@@ -60,13 +64,8 @@ export class AdminController {
   }
 
   @Get('audit-logs')
-  getAuditLogs(
-    @Query('page') page = 1,
-    @Query('limit') limit = 20,
-    @Query('action') action?: AuditAction,
-    @Query('entity') entity?: AuditEntity,
-  ) {
-    return this.auditService.findAll(+page, +limit, { action, entity });
+  getAuditLogs(@Query() dto: GetAuditLogsDto,) {
+    return this.auditService.findAll(dto);
   }
 
   // Xem audit log của 1 entity cụ thể
@@ -113,4 +112,22 @@ export class AdminController {
   ) {
     return this.usersService.updateEmail(id, newEmail, admin.userId);
   }
+  @Get('accounts/:id/verify-balance')
+  verifyAccountBalance(@Param('id', ParseUUIDPipe) id: string) {
+    return this.adminService.verifyAccountBalance(id);
+  }
+
+  @Get('ledger-entries')
+  getAllLedgerEntries(@Query() dto: GetLedgerEntriesDto) {
+    return this.adminService.getAllLedgerEntries(dto);
+  }
+
+  @Get('accounts/:id/ledger-entries')
+  getAccountLedgerEntries(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() dto: GetLedgerEntriesDto,
+  ) {
+    return this.adminService.getAccountLedgerEntries(id, dto);
+  }
+
 }
