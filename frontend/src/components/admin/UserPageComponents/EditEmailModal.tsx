@@ -1,11 +1,11 @@
 // src/components/admin/EditEmailModal.tsx
 import { useState } from 'react';
-import Modal from '../common/Modal';
-import InputField from '../common/InputField';
-import Button from '../common/Button';
-import adminService from '../../services/admin.service';
-import type { AdminUser } from '../../types/admin.types';
-import { ERROR_UPDATE_USER_MESSAGE } from '../../constants/errorUpdateUserMessage';
+import Modal from '../../common/Modal';
+import InputField from '../../common/InputField';
+import Button from '../../common/Button';
+import adminService from '../../../services/admin.service';
+import type { AdminUser } from '../../../types/admin.types';
+import { ERROR_UPDATE_USER_MESSAGE } from '../../../constants/errorUpdateUserMessage';
 
 interface Props {
   user: AdminUser;

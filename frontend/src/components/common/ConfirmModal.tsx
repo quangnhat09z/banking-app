@@ -28,7 +28,7 @@ export default function ConfirmModal({
 
         <div className="flex gap-3 justify-end">
           <Button variant="outline" disabled={loading} onClick={onCancel}>
-            Hủy
+            Cancel
           </Button>
           <Button loading={loading} onClick={onConfirm}>
             {confirmLabel}

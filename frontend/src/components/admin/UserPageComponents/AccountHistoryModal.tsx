@@ -1,12 +1,12 @@
 // src/components/admin/AccountHistoryModal.tsx
 import { useEffect, useState } from 'react';
-import Modal from '../common/Modal';
-import Spinner from '../common/Spinner';
-import ErrorMessage from '../common/ErrorMessage';
-import JsonViewer from '../common/JsonViewer';
-import Badge from '../common/Badge';
-import adminService from '../../services/admin.service';
-import type { AccountHistory, AdminUser } from '../../types/admin.types';
+import Modal from '../../common/Modal';
+import Spinner from '../../common/Spinner';
+import ErrorMessage from '../../common/ErrorMessage';
+import JsonViewer from '../../common/JsonViewer';
+import Badge from '../../common/Badge';
+import adminService from '../../../services/admin.service';
+import type { AccountHistory, AdminUser } from '../../../types/admin.types';
 
 interface Props {
     user: AdminUser;
