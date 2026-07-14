@@ -1,5 +1,5 @@
+// src/components/admin/UserPageComponents/UserTable.tsx
 import type { AdminUser} from '../../../types/admin.types';
-
 
 interface UserTableProps {
     users: AdminUser[];
@@ -37,7 +37,7 @@ export default function UserTable({ users, setEditEmailUser, setDeleteModal, set
                                 className="grid grid-cols-[20%_14%_14%_14%_31%] gap-4
                           items-center px-6 py-3.5 hover:bg-slate-50/40 transition-colors"
                             >
-                                {/* 1. Name + email + status (Căn trái) */}
+                                {/* 1. Name + email + status */}
                                 <div className="min-w-0 text-left">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <p className="text-xs font-bold text-slate-800 truncate">
@@ -56,7 +56,7 @@ export default function UserTable({ users, setEditEmailUser, setDeleteModal, set
                                     <p className="text-[11px] font-medium text-slate-400 truncate mt-0.5">{user.email}</p>
                                 </div>
 
-                                {/* 2. Tài khoản ngân hàng (Căn trái để thẳng hàng với tiêu đề) */}
+                                {/* 2. Tài khoản ngân hàng */}
                                 <div className="min-w-0 text-center">
                                     {user.account ? (
                                         <div className="space-y-0.5">
@@ -72,7 +72,7 @@ export default function UserTable({ users, setEditEmailUser, setDeleteModal, set
                                     )}
                                 </div>
 
-                                {/* 3. Role (Căn giữa - Badge sẽ nằm ngay tâm chữ ROLE ở trên) */}
+                                {/* 3. Role */}
                                 <div className="flex justify-center">
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md tracking-wide uppercase block w-fit
                             ${user.role === 'admin'
@@ -83,12 +83,12 @@ export default function UserTable({ users, setEditEmailUser, setDeleteModal, set
                                     </span>
                                 </div>
 
-                                {/* 4. Ngày tạo (Căn giữa - Thẳng hàng hoàn hảo) */}
+                                {/* 4. Ngày tạo */}
                                 <div className="text-center">
                                     <p className="text-xs font-semibold text-slate-500">{formatDate(user.created_at)}</p>
                                 </div>
 
-                                {/* 5. Hành động (Căn phải hoàn toàn kịch biên) */}
+                                {/* 5. Hành động*/}
                                 <div className="flex items-center justify-around gap-1.5 h-full">
                                     {user.role !== 'admin' ? (
                                         <>

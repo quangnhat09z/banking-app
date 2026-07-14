@@ -1,3 +1,4 @@
+// backend/src/users/users.service.ts
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -93,10 +94,44 @@ export class UsersService {
         });
     }
 
-    async findDeletedUsers(): Promise<User[]> {
-        return this.userRepo.find({
-            where: {},
-            withDeleted: true, // include deleted records
-        }).then(users => users.filter(u => u.deleted_at !== null));
+    async findDeletedUsers() {
+        const users = await this.userRepo
+            .createQueryBuilder('user')
+            .withDeleted()
+            .leftJoinAndSelect('user.accounts', 'account')
+            .select([
+                'user.id',
+                'user.full_name',
+                'user.email',
+                'user.role',
+                'user.status',
+                'user.created_at',
+                'user.deleted_at',
+                'account.id',
+                'account.account_number',
+                'account.balance',
+                'account.status',
+            ])
+            .where('user.deleted_at IS NOT NULL')
+            .orderBy('user.deleted_at', 'DESC')
+            .getMany();
+
+        return users.map((user) => ({
+            id: user.id,
+            full_name: user.full_name,
+            email: user.email,
+            role: user.role,
+            status: user.status,
+            created_at: user.created_at,
+            deleted_at: user.deleted_at,
+            account: user.accounts?.[0]
+                ? {
+                    account_id: user.accounts[0].id,
+                    account_number: user.accounts[0].account_number,
+                    balance: user.accounts[0].balance,
+                    status: user.accounts[0].status,
+                }
+                : null,
+        }));
     }
 }

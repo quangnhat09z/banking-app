@@ -1,9 +1,7 @@
 // src/components/admin/UserPageComponents/Header.tsx
-// 1. Import type gốc từ file types của bạn để đồng bộ hệ thống
 import type { AdminUserPagination } from '../../../types/admin.types'; 
 
 interface HeaderProps {
-    // 2. Thêm "undefined" vào đây để khớp với cú pháp bóc tách dữ liệu ở component cha
     userPagination: AdminUserPagination | undefined | null; 
 }
 
