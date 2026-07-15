@@ -1,7 +1,6 @@
-// TELLER và ADMIN chỉ được tạo bởi ADMIN, không cho tự đăng ký
-import { IsEmail, IsNotEmpty, IsString, MaxLength, MinLength } from "class-validator";
+import { IsEmail, IsString, MinLength, MaxLength, IsNotEmpty } from 'class-validator';
 
-export class RegisterDto {
+export class CreateTellerDto {
     @IsString()
     @IsNotEmpty()
     @MaxLength(100)

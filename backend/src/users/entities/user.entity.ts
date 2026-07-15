@@ -8,6 +8,7 @@ import { Account } from '../../accounts/entities/account.entity';
 
 export enum UserRole {
   CUSTOMER = 'customer',
+  TELLER = 'teller',
   ADMIN = 'admin',
 }
 

@@ -12,6 +12,7 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
   Delete,
+  Post
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -32,6 +33,7 @@ import { UsersService } from '../users/users.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/decorators/current-user.decorator';
 import { GetAuditLogsDto } from './dto/get-audit-logs.dto';
+import { CreateTellerDto } from 'src/auth/dto/create-teller.dto';
 
 class UpdateStatusDto {
   @IsEnum(UserStatus)
@@ -130,4 +132,10 @@ export class AdminController {
     return this.adminService.getAccountLedgerEntries(id, dto);
   }
 
+  @Post('tellers')
+  @UseInterceptors(AuditInterceptor)
+  @AuditLog({ action: AuditAction.REGISTER, entity: AuditEntity.USER })
+  createTeller(@Body() dto: CreateTellerDto) {
+    return this.adminService.createTeller(dto);
+  }
 }

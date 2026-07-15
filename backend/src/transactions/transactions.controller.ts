@@ -12,6 +12,8 @@ import { AuditInterceptor } from 'src/audit/interceptors/audit.interceptor';
 import { AuditLog } from 'src/audit/decorators/audit-log.decorator';
 import { AuditAction, AuditEntity } from 'src/audit/entities/audit-log.entity';
 
+import { UserRole } from 'src/users/entities/user.entity';
+
 @Controller('transactions')
 @UseGuards(JwtAuthGuard)
 export class TransactionsController {
@@ -24,7 +26,7 @@ export class TransactionsController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateTransferDto,
   ) {
-    return this.transactionsService.transfer(user.userId, dto);
+    return this.transactionsService.transfer(user.userId, user.role as UserRole, dto);
   }
 
   @Post(':id/reverse')

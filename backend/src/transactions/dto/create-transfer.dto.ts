@@ -1,5 +1,5 @@
 // src/transactions/dto/create-transfer.dto.ts
-import { IsString, IsNotEmpty, IsNumber, Min, MaxLength, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, Min, MaxLength, IsOptional, IsUUID } from 'class-validator';
 
 export class CreateTransferDto {
   @IsString()
@@ -19,4 +19,10 @@ export class CreateTransferDto {
   @IsString()
   @IsNotEmpty({ message: 'idempotency_key is required' })
   idempotency_key!: string;
+
+  // TELLER tạo giao dịch hộ customer — truyền userId của customer
+  // CUSTOMER không được dùng field này
+  @IsOptional()
+  @IsUUID()
+  on_behalf_of?: string; 
 }

@@ -1,13 +1,16 @@
 // src/admin/admin.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { User, UserStatus } from '../users/entities/user.entity';
+import { User, UserStatus, UserRole} from '../users/entities/user.entity';
 import { Account, AccountStatus } from '../accounts/entities/account.entity';
 import { GetUsersDto } from './dto/get-users.dto';
 import { GetLedgerEntriesDto } from './dto/get-ledger-entries.dto';
+import { CreateTellerDto } from 'src/auth/dto/create-teller.dto';
 import { LedgerService } from '../ledger/ledger.service';
 import { LedgerEntry } from 'src/ledger/entities/ledger-entry.entity';
+
 
 @Injectable()
 export class AdminService {
@@ -199,5 +202,24 @@ export class AdminService {
         },
       };
     });
+  }
+
+  async createTeller(dto: CreateTellerDto): Promise<Omit<User, 'password_hash'>> {
+    const existing = await this.userRepo.findOne({ where: { email: dto.email } });
+    if (existing) throw new ConflictException('Email already in use');
+
+    const password_hash = await bcrypt.hash(dto.password, 10);
+
+    const teller = this.userRepo.create({
+      full_name: dto.full_name,
+      email: dto.email,
+      password_hash,
+      role: UserRole.TELLER,
+      status: UserStatus.ACTIVE,
+    });
+
+    const saved = await this.userRepo.save(teller);
+    const { password_hash: _, ...result } = saved;
+    return result;
   }
 }

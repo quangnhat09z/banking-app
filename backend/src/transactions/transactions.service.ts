@@ -4,6 +4,7 @@ import {
     NotFoundException,
     BadRequestException,
     ConflictException,
+    ForbiddenException,
 } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -26,6 +27,8 @@ import { LedgerEntryType } from '../ledger/entities/ledger-entry.entity';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { NotificationType } from 'src/notifications/entities/notification.entity';
+
+import { UserRole } from 'src/users/entities/user.entity';
 
 // State machine — định nghĩa các transition hợp lệ
 const VALID_TRANSITIONS: Record<TransactionStatus, TransactionStatus[]> = {
@@ -121,8 +124,26 @@ export class TransactionsService {
         };
     }
 
-    // src/transactions/transactions.service.ts
-    async transfer(userId: string, dto: CreateTransferDto) {
+    async transfer(requesterId: string, requesterRole: UserRole, dto: CreateTransferDto) {
+
+        // 0. Xác định userId thực sự thực hiện giao dịch
+        let senderUserId: string;
+        const TELLER_MAX_AMOUNT = 30_000; // 10 triệu VND
+        
+        if (dto.on_behalf_of) {
+            if (requesterRole == UserRole.CUSTOMER) {
+                throw new ForbiddenException('Customers cannot transfer on behalf of others');
+            }
+            if (requesterRole === UserRole.TELLER && dto.amount > TELLER_MAX_AMOUNT) {
+                throw new ForbiddenException(
+                    `Teller cannot process transactions over ${TELLER_MAX_AMOUNT.toLocaleString('vi-VN')}đ. ` +
+                    `Please contact an admin to approve.`,
+                );
+            }
+            senderUserId = dto.on_behalf_of;
+        } else {
+            senderUserId = requesterId;
+        }
 
         // 1. Chống double-submit
         const existingTransaction = await this.dataSource
@@ -149,7 +170,7 @@ export class TransactionsService {
 
             // 3. Lấy account_number KHÔNG LOCK — chỉ để sort
             const fromAccountMeta = await accountRepo.findOne({
-                where: { user_id: userId },
+                where: { user_id: senderUserId },
                 select: { id: true, account_number: true },
             });
 
@@ -170,7 +191,7 @@ export class TransactionsService {
 
             if (shouldLockFromFirst) {
                 fromAccount = await accountRepo.findOne({
-                    where: { user_id: userId },
+                    where: { user_id: senderUserId },
                     lock: { mode: 'pessimistic_write' },
                 });
                 toAccount = await accountRepo.findOne({
@@ -183,7 +204,7 @@ export class TransactionsService {
                     lock: { mode: 'pessimistic_write' },
                 });
                 fromAccount = await accountRepo.findOne({
-                    where: { user_id: userId },
+                    where: { user_id: senderUserId },
                     lock: { mode: 'pessimistic_write' },
                 });
             }
@@ -267,7 +288,7 @@ export class TransactionsService {
                 }).format(transferAmount);
 
                 const senderNotif = await this.notificationsService.create({
-                    user_id: userId,
+                    user_id: senderUserId,
                     type: NotificationType.TRANSFER_SENT,
                     title: 'Transfer successful',
                     body: `You have transferred ${amountFormatted} to account ${toAccount.account_number}. ` +
@@ -281,7 +302,7 @@ export class TransactionsService {
                     body: `You have received ${amountFormatted} from account ${fromAccount.account_number}.`,
                 });
 
-                this.notificationsGateway.emitToUser(userId, senderNotif);
+                this.notificationsGateway.emitToUser(senderUserId, senderNotif);
                 this.notificationsGateway.emitToUser(receiverAccount.user_id, receiverNotif);
             }
 
