@@ -20,6 +20,9 @@ import { LedgerEntry } from './ledger/entities/ledger-entry.entity';
 import { AuditModule } from './audit/audit.module';
 import { AuditLog } from './audit/entities/audit-log.entity';
 
+import { RefreshToken } from './auth/entities/refresh-token.entity';
+
+
 
 @Module({
   imports: [
@@ -29,7 +32,7 @@ import { AuditLog } from './audit/entities/audit-log.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get('DATABASE_URL'),
-        entities: [User, Account, Transaction, Notification, LedgerEntry, AuditLog, AccountHistory],
+        entities: [User, Account, Transaction, Notification, LedgerEntry, AuditLog, AccountHistory, RefreshToken],
         synchronize: true,
       }),
     }),

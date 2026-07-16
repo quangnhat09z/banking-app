@@ -30,6 +30,11 @@ export class UsersService {
         return this.userRepo.save(user);
     }
 
+    async save(user: User): Promise<User> {
+        return this.userRepo.save(user);
+    }
+
+
     async softDeleteUser(userId: string, deletedBy: string): Promise<void> {
         const user = await this.userRepo.findOne({
             where: { id: userId },
@@ -37,7 +42,7 @@ export class UsersService {
         });
 
         if (!user) throw new NotFoundException('User not found');
-        
+
         // Lưu history trước khi soft delete
         for (const account of user.accounts ?? []) {
             const history = this.historyRepo.create({
